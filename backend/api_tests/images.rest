@@ -11,7 +11,7 @@ Content-Type: image/jpeg
 Content-Disposition: form-data; name="album"
 Content-Type: text/plain
 
-user_album2
+user_album3
 ------FormBoundary1234
 
 ### Get all photos

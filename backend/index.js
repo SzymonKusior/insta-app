@@ -7,13 +7,12 @@ import getImageRouter from "./app/routers/getImageRouter.js";
 import userRouter from "./app/routers/userRouter.js";
 import "dotenv/config";
 import profileRouter from "./app/routers/profileRouter.js";
-import { log } from "console";
 
 const logger = tracer.colorConsole({
   format: "{{timestamp}} <{{title}}> (in {{file}}:{{line}}) {{message}} ",
 });
 
-const PORT = process.env.APP_PORT;
+const PORT = process.env.SERVER_PORT;
 const server = createServer(async (req, res) => {
   // jsonController.convertTagsToJSON();
   logger.log(`${req.method} ${req.url}`);

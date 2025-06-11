@@ -9,8 +9,13 @@ const __dirname = path.resolve();
 
 const fileController = {
   uploadImage: async (req, res) => {
+    // Ensure upload directory exists
+    const uploadDir = path.join(__dirname, "upload");
+    if (!fs.existsSync(uploadDir)) {
+      await mkdir(uploadDir, { recursive: true });
+    }
     const form = formidable({
-      uploadDir: path.join(__dirname, "upload"),
+      uploadDir: uploadDir,
       keepExtensions: true,
       multiples: false,
     });
@@ -20,12 +25,14 @@ const fileController = {
         console.error("Form parsing error:", err);
         return res.writeHead(500).end("Upload failed");
       }
+      console.log("Parsed fields:", fields);
+      console.log("Parsed files:", files);
 
       try {
         const albumName = fields.album;
 
         // Create album directory inside upload folder
-        const albumDir = path.join(__dirname, "upload", albumName);
+        const albumDir = path.join(uploadDir, albumName);
         await mkdir(albumDir, { recursive: true });
 
         const fileName = files.file.path.split(path.sep).pop();
