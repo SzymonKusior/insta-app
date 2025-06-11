@@ -1,0 +1,4 @@
+GET http://localhost:3000/api/getImage/1749192792423 HTTP/1.1
+###
+GET http://localhost:3000/api/getImage/1749192792423/filter/grayscale HTTP/1.1
+z

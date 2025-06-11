@@ -1,0 +1,32 @@
+GET http://localhost:3000/api/profile
+authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjE3NDk0NzgyOTg2MDQsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsImlhdCI6MTc0OTQ3ODI5OCwiZXhwIjoxNzQ5NDgxODk4fQ.7F1GLTGS2qpgGNSHo43GydjgPYBzzwIHJAbXLRw5gi8z
+###
+
+PATCH http://localhost:3000/api/profile
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjE3NDk0NzgyOTg2MDQsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsImlhdCI6MTc0OTQ3ODI5OCwiZXhwIjoxNzQ5NDgxODk4fQ.7F1GLTGS2qpgGNSHo43GydjgPYBzzwIHJAbXLRw5gi8
+
+{
+  "name": "New Name",
+  "lastName": "New Lastname"
+}
+###
+POST http://localhost:3000/api/profile HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjE3NDk0NzgyOTg2MDQsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsImlhdCI6MTc0OTQ3ODI5OCwiZXhwIjoxNzQ5NDgxODk4fQ.7F1GLTGS2qpgGNSHo43GydjgPYBzzwIHJAbXLRw5gi8
+Content-Type: multipart/form-data; boundary=----FormBoundary1234
+
+------FormBoundary1234
+Content-Disposition: form-data; name="file"; filename="user.png"
+Content-Type: image/png
+
+< ./user.png
+
+------FormBoundary1234
+Content-Disposition: form-data; name="album"
+Content-Type: text/plain
+
+test@example.com
+------FormBoundary1234
+###
+GET http://localhost:3000/api/profile/logout HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjE3NDk0NzgyOTg2MDQsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsImlhdCI6MTc0OTQ3ODI5OCwiZXhwIjoxNzQ5NDgxODk4fQ.7F1GLTGS2qpgGNSHo43GydjgPYBzzwIHJAbXLRw5gi8
