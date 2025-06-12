@@ -34,26 +34,10 @@ const profileController = {
   },
 
   getProfile: (req, res) => {
-    // check if confimred?
-    const token = req.headers.authorization.split(" ")[1];
-    if (!token) {
-      res.writeHead(401, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "No token provided" }));
-      return;
-    }
-
-    const decoded = userController.verifyToken(token);
-    if (!decoded) {
-      res.writeHead(401, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Invalid token" }));
-      return;
-    }
-
-    // Find user by ID from Users array
-    const user = Users.find((u) => u.id === decoded.userId);
+    const user = profileController.authorizeToken(req);
     if (!user) {
-      res.writeHead(404, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "User not found" }));
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Unauthorized" }));
       return;
     }
 
@@ -68,6 +52,13 @@ const profileController = {
   },
 
   updateProfile: (req, res) => {
+    const user = profileController.authorizeToken(req);
+    if (!user) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Unauthorized" }));
+      return;
+    }
+
     let body = "";
 
     req.on("data", (chunk) => {
@@ -76,32 +67,8 @@ const profileController = {
 
     req.on("end", () => {
       try {
-        const token = req.headers.authorization.split(" ")[1];
-        if (!token) {
-          res.writeHead(401, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "No token provided" }));
-          return;
-        }
-
-        // Use existing verifyToken function
-        const decoded = userController.verifyToken(token);
-        if (!decoded) {
-          res.writeHead(401, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "Invalid token" }));
-          return;
-        }
-
         const { name, lastName } = JSON.parse(body);
 
-        // Find and update user
-        const userIndex = Users.findIndex((u) => u.id === decoded.userId);
-        if (userIndex === -1) {
-          res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "User not found" }));
-          return;
-        }
-
-        const user = Users[userIndex];
         if (name) user.name = name;
         if (lastName) user.lastName = lastName;
 
@@ -239,79 +206,73 @@ const profileController = {
     const squareSize = 200;
     const strokeWidth = 10;
 
+    // Use user-specific profile directory
+    const profileDir = path.join(
+      path.resolve(),
+      "upload",
+      userEmail,
+      "profile"
+    );
+    if (!fs.existsSync(profileDir)) {
+      fs.mkdirSync(profileDir, { recursive: true });
+    }
+
     try {
+      // Save original as profile.png
+      await sharp(inputPath).toFile(path.join(profileDir, `profile.png`));
+
       // Get image metadata
       const metadata = await sharp(inputPath).metadata();
       const { width, height } = metadata;
-      console.log("Image dimensions from metadata:", width, height);
 
       // Calculate square crop
       const cropSize = Math.min(width, height);
       const left = Math.floor((width - cropSize) / 2);
       const top = Math.floor((height - cropSize) / 2);
 
-      const baseFileName = userEmail.replace("@", "_").replace(".", "_");
-
-      // 1. Basic square crop
+      // 1. Simple square-cropped version (just the crop without effects)
       await sharp(inputPath)
         .extract({ left, top, width: cropSize, height: cropSize })
         .resize(squareSize, squareSize)
-        .toFile(`./profile/${baseFileName}_square.png`);
+        .toFile(path.join(profileDir, `profile-cropped-square.png`));
 
-      // 2. Rounded corners
+      // 2. Cropped rounded
       const roundedCorners = Buffer.from(
         `<svg><rect x="0" y="0" width="${squareSize}" height="${squareSize}" rx="${
           squareSize / 2
         }" ry="${squareSize / 2}"/></svg>`
       );
-
       await sharp(inputPath)
         .extract({ left, top, width: cropSize, height: cropSize })
         .resize(squareSize, squareSize)
-        .composite([
-          {
-            input: roundedCorners,
-            blend: "dest-in",
-          },
-        ])
-        .toFile(`./profile/${baseFileName}_rounded.png`);
+        .composite([{ input: roundedCorners, blend: "dest-in" }])
+        .toFile(path.join(profileDir, `profile-cropped-rounded.png`));
 
-      // 3. Text overlay
-      const fontSize = Math.floor(squareSize * 0.3);
-      const textColor = "yellow";
-      const fontFamily = "Arial, sans-serif";
+      // 2. Cropped with yellow border (circular)
+      const tempCirclePath = path.join(
+        profileDir,
+        `profile-cropped-temp-circle.png`
+      );
+      await sharp(inputPath)
+        .extract({ left, top, width: cropSize, height: cropSize })
+        .resize(squareSize, squareSize)
+        .composite([{ input: roundedCorners, blend: "dest-in" }])
+        .toFile(tempCirclePath);
 
-      const letterSvgBuffer = Buffer.from(
-        `<svg width="${squareSize}" height="${squareSize}" viewBox="0 0 ${squareSize} ${squareSize}">
-          <rect x="0" y="0" width="100%" height="100%" fill="rgba(255,0,0,0.5)"/>   
-          <text
-                x="50%" y="50%"
-                alignment-baseline="middle"
-                text-anchor="middle"
-                font-family="${fontFamily}"
-                font-size="${fontSize}"
-                fill="${textColor}"
-                >OK</text>
+      const borderRadius = squareSize / 2 - strokeWidth / 2;
+      const yellowBorderSvgBuffer = Buffer.from(
+        `<svg width="${squareSize}" height="${squareSize}">
+          <circle cx="${squareSize / 2}" cy="${
+          squareSize / 2
+        }" r="${borderRadius}" fill="none" stroke="yellow" stroke-width="${strokeWidth}"/>
         </svg>`
       );
+      await sharp(tempCirclePath)
+        .composite([{ input: yellowBorderSvgBuffer, blend: "over" }])
+        .toFile(path.join(profileDir, `profile-cropped-with-border.png`));
+      fs.unlinkSync(tempCirclePath);
 
-      await sharp(inputPath)
-        .extract({ left, top, width: cropSize, height: cropSize })
-        .resize(squareSize, squareSize)
-        .composite([
-          {
-            input: roundedCorners,
-            blend: "dest-in",
-          },
-          {
-            input: letterSvgBuffer,
-            blend: "over",
-          },
-        ])
-        .toFile(`./profile/${baseFileName}_text.png`);
-
-      // 4. Gradient border
-      const borderRadius = squareSize / 2 - strokeWidth / 2;
+      // 3. Cropped square with gradient (not rounded)
       const gradientSvg = Buffer.from(
         `<svg width="${squareSize}" height="${squareSize}">
           <defs>
@@ -320,28 +281,43 @@ const profileController = {
               <stop offset="100%" stop-color="#00f"/>
             </linearGradient>
           </defs>
-          <circle cx="${squareSize / 2}" cy="${
-          squareSize / 2
-        }" r="${borderRadius}" fill="none" stroke="url(#gradient)" stroke-width="${strokeWidth}"/>
+          <rect x="0" y="0" width="${squareSize}" height="${squareSize}" fill="url(#gradient)" />
         </svg>`
       );
-
       await sharp(inputPath)
         .extract({ left, top, width: cropSize, height: cropSize })
         .resize(squareSize, squareSize)
-        .composite([
-          {
-            input: roundedCorners,
-            blend: "dest-in",
-          },
-          {
-            input: gradientSvg,
-            blend: "over",
-          },
-        ])
-        .toFile(`./profile/${baseFileName}_gradient.png`);
+        .composite([{ input: gradientSvg, blend: "over" }])
+        .toFile(
+          path.join(profileDir, `profile-cropped-square-with-gradient.png`)
+        );
 
-      // 5. Pattern overlay
+      // 4. Cropped square with centered letters
+      const fontSize = Math.floor(squareSize * 0.3);
+      const textColor = "yellow";
+      const fontFamily = "Arial, sans-serif";
+      const letterSvgBuffer = Buffer.from(
+        `<svg width="${squareSize}" height="${squareSize}" viewBox="0 0 ${squareSize} ${squareSize}">
+          <rect x="0" y="0" width="100%" height="100%" fill="rgba(255,0,0,0.5)"/>
+          <text
+            x="50%" y="50%"
+            dominant-baseline="middle"
+            text-anchor="middle"
+            font-family="${fontFamily}"
+            font-size="${fontSize}"
+            fill="${textColor}"
+          >OK</text>
+        </svg>`
+      );
+      await sharp(inputPath)
+        .extract({ left, top, width: cropSize, height: cropSize })
+        .resize(squareSize, squareSize)
+        .composite([{ input: letterSvgBuffer, blend: "over" }])
+        .toFile(
+          path.join(profileDir, `profile-cropped-square-with-letters.png`)
+        );
+
+      // 5. Cropped square with pattern
       const patternSvg = Buffer.from(
         `<svg width="${squareSize}" height="${squareSize}">
           <defs>
@@ -353,55 +329,40 @@ const profileController = {
           <rect x="0" y="0" width="${squareSize}" height="${squareSize}" fill="url(#stripes)" />
         </svg>`
       );
-
       await sharp(inputPath)
         .extract({ left, top, width: cropSize, height: cropSize })
         .resize(squareSize, squareSize)
-        .composite([
-          {
-            input: patternSvg,
-            blend: "overlay",
-          },
-        ])
-        .toFormat("png")
-        .toFile(`./profile/${baseFileName}_pattern.png`);
+        .composite([{ input: patternSvg, blend: "overlay" }])
+        .toFile(
+          path.join(profileDir, `profile-cropped-square-with-pattern.png`)
+        );
 
-      // 6. Yellow border on circular image
-      const tempCirclePath = `./profile/${baseFileName}_temp_circle.png`;
-
-      // First create circular image
-      await sharp(inputPath)
-        .extract({ left, top, width: cropSize, height: cropSize })
-        .resize(squareSize, squareSize)
-        .composite([
-          {
-            input: roundedCorners,
-            blend: "dest-in",
-          },
-        ])
-        .toFile(tempCirclePath);
-
-      // Then add yellow border
-      const yellowBorderSvgBuffer = Buffer.from(
-        `<svg width="${squareSize}" height="${squareSize}">
-          <rect x="0" y="0" width="100%" height="100%" fill="rgba(0,0,0,0)"/>
-          <circle cx="${squareSize / 2}" cy="${
+      // 6. Cropped square with circular gradient border
+      // Create a circular gradient SVG overlay
+      const borderWidth = 10; // thickness of the border
+      const radius = squareSize / 2 - borderWidth / 2;
+      const gradientCircleSvg = Buffer.from(
+        `<svg width="${squareSize}" height="${squareSize}" viewBox="0 0 ${squareSize} ${squareSize}" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="borderGradient" x1="0" y1="0" x2="${squareSize}" y2="0" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#f00"/>
+        <stop offset="1" stop-color="#00f"/>
+      </linearGradient>
+    </defs>
+    <circle cx="${squareSize / 2}" cy="${
           squareSize / 2
-        }" r="${borderRadius}" fill="none" stroke="yellow" stroke-width="${strokeWidth}"/>
-        </svg>`
+        }" r="${radius}" stroke="url(#borderGradient)" stroke-width="${borderWidth}" fill="none"/>
+  </svg>`
       );
 
-      await sharp(tempCirclePath)
-        .composite([
-          {
-            input: yellowBorderSvgBuffer,
-            blend: "over",
-          },
-        ])
-        .toFile(`./profile/${baseFileName}_border.png`);
-
-      // Clean up temporary circle file
-      fs.unlinkSync(tempCirclePath);
+      // Compose the square image with the circular gradient border overlay
+      await sharp(inputPath)
+        .extract({ left, top, width: cropSize, height: cropSize })
+        .resize(squareSize, squareSize)
+        .composite([{ input: gradientCircleSvg, blend: "over" }])
+        .toFile(
+          path.join(profileDir, `profile-cropped-square-with-gradient.png`)
+        );
     } catch (error) {
       console.error("Image processing error:", error);
       throw error;

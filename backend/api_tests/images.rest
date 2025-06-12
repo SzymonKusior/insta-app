@@ -11,24 +11,24 @@ Content-Type: image/jpeg
 Content-Disposition: form-data; name="album"
 Content-Type: text/plain
 
-user_album3
+test@example.com
 ------FormBoundary1234
 
 ### Get all photos
 GET http://localhost:3000/api/photos HTTP/1.1
 
 ### Get single photo
-GET http://localhost:3000/api/photos/1749192503178 HTTP/1.1
+GET http://localhost:3000/api/photos/1749727232308 HTTP/1.1
 
 ### Delete photo
-DELETE http://localhost:3000/api/photos/1749192503178 HTTP/1.1
+DELETE http://localhost:3000/api/photos/1749727767597 HTTP/1.1
 
 ### Update photo status
 PATCH http://localhost:3000/api/photos HTTP/1.1
 Content-Type: application/json
 
 {
-  "id": 1749192019061,
+  "id": 1749727719576,
   "status": "changed 2nd time"
 }
 
@@ -37,7 +37,7 @@ PATCH http://localhost:3000/api/photos/tags HTTP/1.1
 Content-Type: application/json
 
 {
-  "photoId": 1749192540127,
+  "photoId": 1749727832443,
   "tags": [
     {
       "name": "#nowytagdlazdjęciaasdasd"
@@ -50,7 +50,7 @@ PATCH http://localhost:3000/api/photos/tags HTTP/1.1
 Content-Type: application/json
 
 {
-  "photoId": 1749122809186,
+  "photoId": 1749727832443,
   "tags": [
     {
       "name": "#nowytag1dlazdjęcia"
@@ -65,5 +65,5 @@ Content-Type: application/json
 }
 
 ### Get tags for specific photo
-GET http://localhost:3000/api/photos/tags/1749192540127 HTTP/1.1
+GET http://localhost:3000/api/photos/tags/1749727832443 HTTP/1.1
 

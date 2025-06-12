@@ -107,7 +107,6 @@ const jsonController = {
 
     req.on("end", async () => {
       try {
-        console.log("body", body);
         const updateData = JSON.parse(body);
         console.log(updateData);
 
