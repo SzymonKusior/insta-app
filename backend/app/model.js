@@ -1,11 +1,13 @@
 import bcrypt from "bcryptjs";
 const { hash, compare } = bcrypt;
 export class Image {
-  constructor(id, originalName, url, lastChange, history) {
+  constructor(id, originalName, url, lastChange, album, fileName, history) {
     this.id = id;
     this.originalName = originalName;
     this.url = url;
     this.lastChange = lastChange;
+    this.album = album;
+    this.fileName = fileName;
     this.history = history;
   }
 }
@@ -34,31 +36,31 @@ export const Users = [];
 export const Images = [];
 
 export const tagsRaw = [
-  "#love",
-  "#instagood",
-  "#fashion",
-  "#instagram",
-  "#photooftheday",
-  "#art",
-  "#photography",
-  "#beautiful",
-  "#nature",
-  "#picoftheday",
-  "#travel",
-  "#happy",
-  "#cute",
-  "#instadaily",
-  "#style",
-  "#tbt",
-  "#repost",
-  "#followme",
-  "#summer",
-  "#reels",
-  "#like4like",
-  "#beauty",
-  "#fitness",
-  "#food",
-  "#instalike",
+  // "#love",
+  // "#instagood",
+  // "#fashion",
+  // "#instagram",
+  // "#photooftheday",
+  // "#art",
+  // "#photography",
+  // "#beautiful",
+  // "#nature",
+  // "#picoftheday",
+  // "#travel",
+  // "#happy",
+  // "#cute",
+  // "#instadaily",
+  // "#style",
+  // "#tbt",
+  // "#repost",
+  // "#followme",
+  // "#summer",
+  // "#reels",
+  // "#like4like",
+  // "#beauty",
+  // "#fitness",
+  // "#food",
+  // "#instalike",
 ];
 
 export const tagsJson = [];

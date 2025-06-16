@@ -40,11 +40,14 @@ const userController = {
 
         const token = userController.createToken(userId, email);
 
-        res.writeHead(201, { "Content-Type": "text/plain; charset=utf-8" });
-        res.end(`Skopiuj poniższy link do przeglądarki
-http://localhost:3000/api/user/confirm/${token}
-w celu potwierdzenia konta
-Uwaga: link jest ważny przez godzinę`);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            message: "Registration successful. Please confirm your account.",
+            token: token,
+            userId: userId,
+          })
+        );
       } catch (error) {
         console.error("Registration error:", error);
         res.writeHead(500, { "Content-Type": "application/json" });

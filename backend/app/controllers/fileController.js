@@ -35,7 +35,7 @@ const fileController = {
         const albumDir = path.join(uploadDir, albumName);
         await mkdir(albumDir, { recursive: true });
 
-        const fileName = files.file.path.split(path.sep).pop();
+        const fileName = files.file.path.split("\\").pop();
         const oldPath = files.file.path;
         const newPath = path.join(albumDir, fileName);
 
@@ -51,9 +51,10 @@ const fileController = {
           id: Date.now(),
           originalName: files.file.name,
           url: `/upload/${albumName}/${fileName}`,
-          albumName: albumName,
+          album: albumName,
           fileName: fileName,
         };
+        console.log("File uploaded successfully:", fileInfo);
 
         // Now handle JSON entry creation
         try {
@@ -62,7 +63,7 @@ const fileController = {
           res.end(JSON.stringify(jsonEntry));
         } catch (jsonError) {
           // If JSON creation fails, clean up the uploaded file
-          await this.deleteImageFile(fileInfo.url);
+          await fileController.deleteImageFile(fileInfo.url);
           res.writeHead(500).end("Database entry creation failed");
         }
       } catch (error) {

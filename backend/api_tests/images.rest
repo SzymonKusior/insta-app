@@ -37,7 +37,7 @@ PATCH http://localhost:3000/api/photos/tags HTTP/1.1
 Content-Type: application/json
 
 {
-  "photoId": 1749727832443,
+  "photoId": 1750089731361,
   "tags": [
     {
       "name": "#nowytagdlazdjęciaasdasd"

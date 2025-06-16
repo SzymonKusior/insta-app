@@ -17,6 +17,21 @@ const server = createServer(async (req, res) => {
   // jsonController.convertTagsToJSON();
   logger.log(`${req.method} ${req.url}`);
 
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Request-Method", "*");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "OPTIONS, GET, POST, PATCH, PUT, DELETE"
+  );
+  res.setHeader("Access-Control-Allow-Headers", "*, Authorization");
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(200);
+    res.end();
+    return;
+  }
+
   //images
   if (req.url.search("/api/photos") != -1) {
     await imageRouter(req, res);
@@ -31,10 +46,12 @@ const server = createServer(async (req, res) => {
   else if (req.url.search("/api/filters") != -1) {
     await filtersRouter(req, res);
   }
+
   //get image
   else if (req.url.search("/api/getImage") != -1) {
     await getImageRouter(req, res);
   }
+
   //users router
   else if (req.url.search("/api/user") != -1) {
     await userRouter(req, res);

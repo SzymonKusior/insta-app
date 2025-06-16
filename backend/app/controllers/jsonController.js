@@ -41,10 +41,29 @@ const jsonController = {
     }
   },
 
+  getImagesByUser: async (req, res) => {
+    try {
+      const userEmail = req.url.split("/")[4];
+      const userPhotos = Images.filter((img) => img.album === userEmail);
+
+      if (userPhotos.length === 0) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "No photos found for this user" }));
+        return;
+      }
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(userPhotos));
+    } catch (error) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Server error" }));
+    }
+  },
+
   // Create new image entry (called after file upload)
   createImageEntry: async (fileInfo) => {
     try {
-      const { id, originalName, url, albumName } = fileInfo;
+      const { id, originalName, url, album, fileName } = fileInfo;
       const lastChange = "original";
       const history = [
         {
@@ -53,7 +72,15 @@ const jsonController = {
         },
       ];
 
-      const image = new Image(id, originalName, url, lastChange, history);
+      const image = new Image(
+        id,
+        originalName,
+        url,
+        lastChange, // This was incorrect (was passing album here)
+        album, // This was incorrect (was passing fileName here)
+        fileName, // This was incorrect (was passing lastChange here)
+        history
+      );
       Images.push(image);
 
       return image;

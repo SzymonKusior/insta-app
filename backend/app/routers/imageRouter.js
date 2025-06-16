@@ -23,6 +23,11 @@ const imageRouter = async (req, res) => {
     req.method === "GET"
   ) {
     await jsonController.getImageTags(req, res);
+  } else if (
+    req.url.match(/\/api\/photos\/user\/(.+)/) &&
+    req.method === "GET"
+  ) {
+    await jsonController.getImagesByUser(req, res);
   }
 };
 

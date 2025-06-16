@@ -418,8 +418,6 @@ const profileController = {
 
   // Optional: Clean up expired tokens from blacklist
   cleanupBlacklist: () => {
-    const now = Math.floor(Date.now() / 1000);
-
     tokenBlacklist.forEach((token) => {
       try {
         const decoded = userController.verifyToken(token);
