@@ -21,13 +21,14 @@ export class Tag {
 }
 
 export class User {
-  constructor(id, name, lastName, email, password) {
+  constructor(id, name, lastName, email, password, profilePicture = null) {
     this.id = id;
     this.name = name;
     this.lastName = lastName;
     this.email = email;
     this.confirmed = false;
     this.password = password;
+    this.profilePicture = profilePicture;
     Users.push(this);
   }
 }

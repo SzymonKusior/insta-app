@@ -1,175 +1,143 @@
 <template>
   <div class="profile-picture-selector">
-    <h3>Select Your Profile Picture</h3>
-    <div class="versions-grid">
+    <div v-if="loading">Loading images...</div>
+    <div v-if="error" class="error">{{ error }}</div>
+    <div class="versions-grid" v-if="images.length">
       <div
-        v-for="version in versions"
-        :key="version.version"
+        v-for="(img, idx) in images"
+        :key="img"
         class="version-option"
-        :class="{ selected: selectedVersion === version.version }"
-        @click="selectVersion(version.version)"
+        :class="{ selected: selectedIdx === idx }"
+        @click="selectedIdx = idx"
       >
-        <img :src="`http://localhost:3000${version.url}`" :alt="version.version" />
-        <p>{{ formatVersionName(version.version) }}</p>
+        <img :src="`http://localhost:3000${img}`" />
       </div>
     </div>
-    <div class="actions">
-      <button @click="confirmSelection" :disabled="!selectedVersion" class="confirm-btn">
-        Confirm Selection
-      </button>
-      <button @click="$emit('cancel')" class="cancel-btn">Cancel</button>
-    </div>
+    <button :disabled="selectedIdx === null" @click="setProfilePictureHandler" class="confirm-btn">
+      Set as Profile Picture
+    </button>
   </div>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { getProfileImages, setProfilePicture } from '@/api'
 
 export default {
   name: 'ProfilePictureSelector',
-  emits: ['selected', 'cancel'],
-  setup(props, { emit }) {
-    const versions = ref([])
-    const selectedVersion = ref(null)
-
-    const loadVersions = async () => {
-      try {
-        const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3000/api/profile/versions', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          versions.value = data.versions
-        }
-      } catch (error) {
-        console.error('Error loading profile versions:', error)
-      }
-    }
-
-    const selectVersion = (version) => {
-      selectedVersion.value = version
-    }
-
-    const confirmSelection = async () => {
-      if (!selectedVersion.value) return
-
-      try {
-        const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3000/api/profile/select', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            version: selectedVersion.value,
-          }),
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          emit('selected', data.profilePicture)
-        }
-      } catch (error) {
-        console.error('Error selecting profile picture:', error)
-      }
-    }
-
-    const formatVersionName = (version) => {
-      return version.charAt(0).toUpperCase() + version.slice(1)
-    }
-
-    onMounted(() => {
-      loadVersions()
-    })
-
+  emits: ['selected'],
+  data() {
     return {
-      versions,
-      selectedVersion,
-      selectVersion,
-      confirmSelection,
-      formatVersionName,
+      images: [],
+      selectedIdx: null,
+      loading: false,
+      error: '',
     }
+  },
+  methods: {
+    async fetchImages() {
+      this.loading = true
+      this.error = ''
+      try {
+        const res = await getProfileImages()
+        // Sort images to put most recently added first (assuming file naming convention)
+        const sortedImages = this.sortImagesByRecent(res.images || [])
+        this.images = sortedImages
+
+        // Select the first image by default (most recent)
+        if (this.images.length > 0) {
+          this.selectedIdx = 0
+        } else {
+          this.selectedIdx = null
+        }
+      } catch (err) {
+        this.error = err?.message || 'Failed to load images'
+        console.error('[ProfilePictureSelector] Error fetching images:', err)
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // Helper method to sort images by recency
+    sortImagesByRecent(images) {
+      // This is a simple heuristic that assumes the most recently processed images
+      // have the word "profile" without other descriptive terms
+      return [...images].sort((a, b) => {
+        // Put profile.png first (assuming it's the most recent)
+        if (a.includes('profile.png')) return -1
+        if (b.includes('profile.png')) return 1
+        return 0
+      })
+    },
+
+    async setProfilePictureHandler() {
+      if (this.selectedIdx === null) return
+      const selectedUrl = this.images[this.selectedIdx]
+      try {
+        await setProfilePicture({ profilePicture: selectedUrl })
+        this.$emit('selected', selectedUrl)
+      } catch (err) {
+        this.error = err?.message || 'Failed to set profile picture'
+        console.error('[ProfilePictureSelector] Error setting picture:', err)
+      }
+    },
+  },
+  mounted() {
+    this.fetchImages()
   },
 }
 </script>
 
 <style scoped>
 .profile-picture-selector {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 20px;
+  margin-bottom: 20px;
 }
 
 .versions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   margin: 20px 0;
 }
 
 .version-option {
-  text-align: center;
   border: 2px solid transparent;
   border-radius: 8px;
-  padding: 10px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  overflow: hidden;
+  transition: transform 0.2s;
 }
 
 .version-option:hover {
-  border-color: #ddd;
+  transform: scale(1.05);
 }
 
 .version-option.selected {
-  border-color: #007bff;
-  background-color: #f0f8ff;
+  border-color: #0095f6;
 }
 
 .version-option img {
   width: 100px;
   height: 100px;
   object-fit: cover;
-  border-radius: 50%;
-}
-
-.version-option p {
-  margin: 10px 0 0 0;
-  font-weight: 500;
-}
-
-.actions {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-.confirm-btn,
-.cancel-btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px;
 }
 
 .confirm-btn {
-  background-color: #007bff;
+  margin-top: 10px;
+  padding: 8px 16px;
+  background-color: #0095f6;
   color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 .confirm-btn:disabled {
-  background-color: #ccc;
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
-.cancel-btn {
-  background-color: #6c757d;
-  color: white;
+.error {
+  color: red;
+  margin: 10px 0;
 }
 </style>

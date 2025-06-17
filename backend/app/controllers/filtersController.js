@@ -63,7 +63,7 @@ const filtersController = {
         // Define filter operations
         const filterOperations = {
           tint: (sharp, params) => {
-            const { r = 255, g = 255, b = 255 } = params;
+            const { r = 255, g = 255, b = 100 } = params;
             return sharp.tint({ r, g, b });
           },
           rotate: (sharp, params) => {

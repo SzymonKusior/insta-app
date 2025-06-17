@@ -11,6 +11,11 @@ const profileRouter = async (req, res) => {
     await profileController.logout(req, res);
   } else if (req.url === "/api/profile/logout" && req.method === "POST") {
     await profileController.logout(req, res);
+  } else if (req.url === "/api/profile/images" && req.method === "GET") {
+    await profileController.getProfileImages(req, res);
+  } else if (req.url === "/api/profile/picture" && req.method === "PATCH") {
+    // Add this new route to handle profile picture updates
+    await profileController.setProfilePicture(req, res);
   }
 };
 

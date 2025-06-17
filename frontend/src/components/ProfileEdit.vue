@@ -3,55 +3,62 @@
     <h2>Edit Profile</h2>
 
     <form @submit.prevent="updateProfile">
-      <div class="form-group profile-picture-upload">
-        <div class="current-avatar">
+      <div class="form-group">
+        <label>Profile Picture</label>
+        <div class="profile-picture-actions">
           <img
             :src="
-              previewImage ||
-              (user.profilePicture
+              user.profilePicture
                 ? `http://localhost:3000${user.profilePicture}`
-                : '/default-avatar.png')
+                : '/default-avatar.png'
             "
-            alt="Profile picture"
+            class="current-avatar"
+            alt="Profile Picture"
           />
+          <button type="button" @click="startProfilePictureChange">Change Picture</button>
         </div>
 
-        <div class="upload-controls">
-          <label for="profile-picture" class="upload-btn">
-            <i class="pi pi-camera"></i> Change Profile Picture
-          </label>
-          <input
-            type="file"
-            id="profile-picture"
-            accept="image/*"
-            @change="handleImageChange"
-            style="display: none"
-          />
-          <button v-if="profilePicture" type="button" class="cancel-btn" @click="cancelImageUpload">
-            Cancel
-          </button>
+        <!-- Profile picture management section -->
+        <div v-if="showPictureManagement" class="picture-management">
+          <div v-if="pictureCheckLoading" class="loading">Checking available images...</div>
+
+          <div v-else>
+            <!-- Selector section - always shows if images exist -->
+            <div v-if="showSelector" class="selector-section">
+              <h4>Select your profile picture</h4>
+              <ProfilePictureSelector ref="selector" @selected="onProfilePicSelected" />
+
+              <!-- Upload new picture button -->
+              <button type="button" class="toggle-btn" @click="toggleUploader">
+                {{ showUploader ? 'Hide Uploader' : 'Upload New Picture' }}
+              </button>
+            </div>
+
+            <!-- Uploader section - toggle visibility -->
+            <div v-if="showUploader" class="uploader-section">
+              <h4>Upload a new profile picture</h4>
+              <ProfilePictureUpload @uploaded="onPictureUploaded" />
+            </div>
+
+            <!-- If no images exist, only show uploader -->
+            <div v-if="!showSelector && !showUploader">
+              <h4>Upload a profile picture</h4>
+              <ProfilePictureUpload @uploaded="onPictureUploaded" />
+            </div>
+
+            <button type="button" class="cancel-btn" @click="cancelPictureChange">Cancel</button>
+          </div>
         </div>
       </div>
 
       <div class="form-group">
-        <label for="username">Username</label>
-        <input type="text" id="username" v-model="formData.username" placeholder="Your username" />
+        <label for="name">Name</label>
+        <input type="text" id="name" v-model="formData.name" placeholder="Your name" />
       </div>
 
       <div class="form-group">
-        <label for="email">Email</label>
-        <input type="email" id="email" v-model="formData.email" placeholder="Your email" disabled />
-        <small>Email cannot be changed</small>
-      </div>
-
-      <div class="form-group">
-        <label for="bio">Bio</label>
-        <textarea
-          id="bio"
-          v-model="formData.bio"
-          placeholder="Tell us about yourself"
-          rows="4"
-        ></textarea>
+        <label for="lastName">Last Name</label>
+        <input type="text" id="lastName" v-model="formData.lastName" placeholder="Your last name" />
       </div>
 
       <div class="form-actions">
@@ -69,93 +76,149 @@
 
 <script>
 import { ref, reactive, onMounted } from 'vue'
-import { updateUserProfile, uploadProfilePicture } from '@/api'
+import { updateUserProfile, getProfileImages } from '@/api'
+import ProfilePictureUpload from './ProfilePictureUpload.vue'
+import ProfilePictureSelector from './ProfilePictureSelector.vue'
 
 export default {
   name: 'ProfileEdit',
-
+  components: {
+    ProfilePictureUpload,
+    ProfilePictureSelector,
+  },
   props: {
     user: {
       type: Object,
       required: true,
     },
   },
-
   emits: ['profile-updated'],
-
   setup(props, { emit }) {
     const formData = reactive({
-      username: '',
-      email: '',
-      bio: '',
+      name: '',
+      lastName: '',
     })
-
     const loading = ref(false)
-    const profilePicture = ref(null)
-    const previewImage = ref(null)
+    const showSelector = ref(false)
+    const showUploader = ref(false)
+    const selector = ref(null)
+    const showPictureManagement = ref(false)
+    const pictureCheckLoading = ref(false)
 
     onMounted(() => {
-      // Initialize form with user data
-      formData.username = props.user.username || ''
-      formData.email = props.user.email || ''
-      formData.bio = props.user.bio || ''
+      formData.name = props.user.name || ''
+      formData.lastName = props.user.lastName || ''
+      console.log('[ProfileEdit] Mounted with user:', props.user)
     })
-
-    const handleImageChange = (event) => {
-      const file = event.target.files[0]
-      if (file) {
-        profilePicture.value = file
-
-        // Create preview
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          previewImage.value = e.target.result
-        }
-        reader.readAsDataURL(file)
-      }
-    }
-
-    const cancelImageUpload = () => {
-      profilePicture.value = null
-      previewImage.value = null
-    }
 
     const updateProfile = async () => {
       loading.value = true
-
+      console.log('[ProfileEdit] Updating profile with:', formData)
       try {
-        // First update profile info
         const updatedProfile = await updateUserProfile({
-          username: formData.username,
-          bio: formData.bio,
+          name: formData.name,
+          lastName: formData.lastName,
         })
 
-        // Then upload profile picture if changed
-        if (profilePicture.value) {
-          const formData = new FormData()
-          formData.append('profilePicture', profilePicture.value)
-
-          const pictureResponse = await uploadProfilePicture(formData)
-          updatedProfile.profilePicture = pictureResponse.profilePicture
+        // Create a copy with updated values
+        const updatedUser = {
+          ...props.user,
+          name: updatedProfile.user.name,
+          lastName: updatedProfile.user.lastName,
         }
 
-        // Notify parent of update
-        emit('profile-updated', updatedProfile)
+        emit('profile-updated', updatedUser)
+        console.log('[ProfileEdit] Profile updated:', updatedProfile.user)
       } catch (error) {
-        console.error('Error updating profile:', error)
+        console.error('[ProfileEdit] Error updating profile:', error)
       } finally {
         loading.value = false
       }
     }
 
+    const toggleUploader = () => {
+      showUploader.value = !showUploader.value
+    }
+
+    const startProfilePictureChange = async (e) => {
+      e.preventDefault()
+      showPictureManagement.value = true
+      pictureCheckLoading.value = true
+
+      try {
+        console.log('[ProfileEdit] Checking for existing profile images...')
+        const res = await getProfileImages()
+        console.log('[ProfileEdit] Images found:', res.images)
+
+        if (res.images && res.images.length > 0) {
+          // Images exist - show selector, but not uploader by default
+          showSelector.value = true
+          showUploader.value = false
+        } else {
+          // No images - show only uploader
+          showUploader.value = true
+          showSelector.value = false
+        }
+      } catch (error) {
+        console.error('[ProfileEdit] Error checking profile images:', error)
+        showUploader.value = true
+        showSelector.value = false
+      } finally {
+        pictureCheckLoading.value = false
+      }
+    }
+
+    const onPictureUploaded = async (processedImages) => {
+      console.log(
+        '[ProfileEdit] Image uploaded, showing selector with new images:',
+        processedImages,
+      )
+
+      // Always show the selector when a new image is uploaded
+      showSelector.value = true
+
+      // Wait a short moment to ensure backend processing is complete
+      setTimeout(async () => {
+        if (selector.value) {
+          console.log('[ProfileEdit] Refreshing selector images')
+          await selector.value.fetchImages()
+        }
+      }, 500)
+    }
+
+    const onProfilePicSelected = (url) => {
+      console.log('[ProfileEdit] Profile picture selected:', url)
+
+      // Create a copy and emit the updated user
+      const updatedUser = { ...props.user, profilePicture: url }
+      emit('profile-updated', updatedUser)
+
+      showPictureManagement.value = false
+      showSelector.value = false
+      showUploader.value = false
+    }
+
+    const cancelPictureChange = () => {
+      showPictureManagement.value = false
+      showSelector.value = false
+      showUploader.value = false
+    }
+
     return {
       formData,
       loading,
-      profilePicture,
-      previewImage,
-      handleImageChange,
-      cancelImageUpload,
+      showSelector,
+      showUploader,
+      selector,
       updateProfile,
+      onPictureUploaded,
+      onProfilePicSelected,
+      startProfilePictureChange,
+      toggleUploader,
+      cancelPictureChange,
+      user: props.user,
+      showPictureManagement,
+      pictureCheckLoading,
     }
   },
 }
@@ -184,8 +247,7 @@ export default {
   font-weight: 500;
 }
 
-.form-group input,
-.form-group textarea {
+.form-group input {
   width: 100%;
   padding: 10px;
   border: 1px solid #ddd;
@@ -193,49 +255,57 @@ export default {
   font-size: 16px;
 }
 
-.form-group small {
-  display: block;
-  margin-top: 5px;
-  color: #8e8e8e;
-  font-size: 12px;
-}
-
-.profile-picture-upload {
+.profile-picture-actions {
   display: flex;
   align-items: center;
-  gap: 20px;
-  margin-bottom: 30px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .current-avatar {
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  overflow: hidden;
-}
-
-.current-avatar img {
-  width: 100%;
-  height: 100%;
   object-fit: cover;
+  border: 2px solid #eee;
 }
 
-.upload-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.picture-management {
+  margin-top: 15px;
+  padding: 15px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background-color: #f9f9f9;
 }
 
-.upload-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
+.picture-management h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.selector-section,
+.uploader-section {
+  margin-bottom: 20px;
+}
+
+.toggle-btn {
+  margin-top: 10px;
   padding: 8px 16px;
-  background-color: #0095f6;
-  color: white;
+  background-color: #e9e9e9;
+  border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
+}
+
+.toggle-btn:hover {
+  background-color: #ddd;
+}
+
+.loading {
+  text-align: center;
+  padding: 10px;
+  color: #666;
 }
 
 .form-actions {
@@ -246,7 +316,7 @@ export default {
 }
 
 .cancel-btn {
-  padding: 10px 20px;
+  padding: 8px 16px;
   background-color: #f0f0f0;
   border: none;
   border-radius: 4px;

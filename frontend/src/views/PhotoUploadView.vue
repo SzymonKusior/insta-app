@@ -1,6 +1,5 @@
 <template>
   <div class="upload-view">
-    <h1>Share a New Photo</h1>
     <PhotoUpload />
   </div>
 </template>

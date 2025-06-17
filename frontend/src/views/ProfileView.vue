@@ -4,8 +4,8 @@
       <div class="profile-avatar">
         <img
           :src="
-            user.profilePicture
-              ? `http://localhost:3000${user.profilePicture}`
+            currentUser.profilePicture
+              ? `http://localhost:3000${currentUser.profilePicture}`
               : '/default-avatar.png'
           "
           alt="Profile picture"
@@ -13,9 +13,8 @@
       </div>
 
       <div class="profile-info">
-        <h1>{{ user.username }}</h1>
-        <p>{{ user.bio || 'No bio provided' }}</p>
-        <p class="join-date">Joined: {{ formatDate(user.createdAt) }}</p>
+        <h1>{{ currentUser.name }} {{ currentUser.lastName }}</h1>
+        <p>{{ currentUser.email }}</p>
 
         <div class="profile-actions">
           <button
@@ -37,13 +36,11 @@
     </div>
 
     <div class="profile-content">
-      <!-- Photos View - removed the userEmail prop -->
       <ProfilePhotos v-if="currentView === 'photos'" />
 
-      <!-- Edit Profile View - remains the same -->
       <ProfileEdit
         v-else-if="currentView === 'edit'"
-        :user="user"
+        :user="currentUser"
         @profile-updated="handleProfileUpdated"
       />
     </div>
@@ -51,10 +48,12 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useAuthStore } from '@/store'
 import ProfilePhotos from '@/components/ProfilePhotos.vue'
 import ProfileEdit from '@/components/ProfileEdit.vue'
+import ProfilePictureUpload from '@/components/ProfilePictureUpload.vue'
+import ProfilePictureSelector from '@/components/ProfilePictureSelector.vue'
 
 export default {
   name: 'Profile',
@@ -62,16 +61,31 @@ export default {
   components: {
     ProfilePhotos,
     ProfileEdit,
+    ProfilePictureUpload,
+    ProfilePictureSelector,
   },
 
   setup() {
     const authStore = useAuthStore()
-    const currentView = ref('photos') // Default view is photos
-    const user = ref({})
+    const currentView = ref('photos')
+    const selector = ref(null)
+    const currentUser = ref({})
 
-    onMounted(async () => {
-      // Get user data from auth store
-      user.value = authStore.getUser || {}
+    // Use computed for read-only reference to the store's user
+    const user = computed(() => {
+      console.log('Auth store:', authStore)
+      return authStore.user || {}
+    })
+
+    // Update the currentUser ref whenever the computed user changes
+    const updateCurrentUser = () => {
+      // Create a deep copy to avoid reference issues
+      currentUser.value = JSON.parse(JSON.stringify(user.value))
+    }
+
+    onMounted(() => {
+      authStore.checkAuthStatus()
+      updateCurrentUser()
     })
 
     const formatDate = (dateString) => {
@@ -81,17 +95,36 @@ export default {
     }
 
     const handleProfileUpdated = (updatedUser) => {
-      user.value = updatedUser
+      // Replace updateUser with setUser or whatever method exists in your store
+      authStore.setUser(updatedUser)
+      // Update our local reference
+      updateCurrentUser()
       // Switch to photos view after successful update
       currentView.value = 'photos'
     }
 
+    const refreshSelector = () => {
+      // Call fetchImages() on ProfilePictureSelector
+      if (selector.value) selector.value.fetchImages()
+    }
+
+    const onProfilePicSelected = (url) => {
+      // Update the auth store with new profile picture
+      const updatedUser = { ...user.value, profilePicture: url }
+      authStore.updateUser(updatedUser)
+      // Update our local reference
+      updateCurrentUser()
+    }
+
     return {
       currentView,
-      user,
+      currentUser,
       authStore,
       formatDate,
       handleProfileUpdated,
+      refreshSelector,
+      onProfilePicSelected,
+      selector,
     }
   },
 }

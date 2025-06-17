@@ -11,6 +11,7 @@ export const useAuthStore = defineStore('authStore', {
   getters: {
     isAuthenticated: (state) => !!state.token,
     userEmail: (state) => state.user?.email || '',
+    getUser: (state) => state.user, // <-- Add this line
   },
   actions: {
     async register(userData) {
@@ -76,6 +77,9 @@ export const useAuthStore = defineStore('authStore', {
       this.token = null
       this.user = null
       localStorage.removeItem('token')
+    },
+    setUser(userData) {
+      this.user = userData
     },
   },
 })

@@ -20,7 +20,7 @@ app.use(router)
 app.use(PrimeVue, {
   theme: {
     preset: Aura,
-    ripple: true,
+    Ripple: true,
   },
 })
 app.mount('#app')

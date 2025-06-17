@@ -13,7 +13,7 @@
 
     <div v-else class="photos-grid">
       <div v-for="photo in photos" :key="photo.id" class="photo-card">
-        <img :src="`http://localhost:3000/api/getImage/${photo.id}`" :alt="photo.originalName" />
+        <img :src="getPhotoUrl(photo)" :alt="photo.originalName" />
 
         <div class="photo-overlay">
           <h3>{{ photo.originalName }}</h3>
@@ -33,10 +33,10 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { usePhotoStore, useAuthStore } from '@/store'
-import { getUserPhotos } from '@/api'
-
+import { getPhotoUrl, getUserPhotos } from '@/api'
+import { useRouter } from 'vue-router'
 export default {
   name: 'ProfilePhotos',
 
@@ -45,23 +45,31 @@ export default {
     const authStore = useAuthStore()
     const photos = ref([])
     const loading = ref(true)
+    const router = useRouter()
+    // Use computed for user email
+    const userEmail = computed(() => authStore.user?.email || '')
+    // Check authentication status on mount
+    onMounted(async () => {
+      await authStore.checkAuthStatus()
 
+      if (!authStore.isAuthenticated) {
+        router.push('/login')
+      }
+      fetchUserPhotos()
+    })
     const fetchUserPhotos = async () => {
       loading.value = true
       try {
-        // Get the current user's email correctly using the userProfile getter
-        const userEmail = authStore.user?.email
-
-        if (!userEmail) {
+        if (!userEmail.value) {
           console.error('User email not available')
           loading.value = false
           return
         }
 
-        console.log('Fetching photos for user email:', userEmail)
+        console.log('Fetching photos for user email:', userEmail.value)
 
-        // Use the email to fetch user photos
-        const userPhotos = await getUserPhotos(userEmail)
+        // Use the computed email to fetch user photos
+        const userPhotos = await getUserPhotos(userEmail.value)
         photos.value = userPhotos
         console.log(userPhotos)
       } catch (error) {
@@ -91,6 +99,8 @@ export default {
       photos,
       loading,
       deletePhoto,
+      userEmail, // Export if you want to use it in the template
+      getPhotoUrl,
     }
   },
 }

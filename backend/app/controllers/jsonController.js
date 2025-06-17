@@ -47,7 +47,7 @@ const jsonController = {
       const userPhotos = Images.filter((img) => img.album === userEmail);
 
       if (userPhotos.length === 0) {
-        res.writeHead(404, { "Content-Type": "application/json" });
+        res.writeHead(204, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "No photos found for this user" }));
         return;
       }

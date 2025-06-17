@@ -29,13 +29,13 @@ const router = createRouter({
 //   const authStore = pinia.state.value.authStore
 //   console.log('Auth Store:', authStore)
 
-//   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
+// const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
 
-//   if (requiresAuth && !authStore?.token) {
-//     next('/login')
-//   } else {
-//     next()
-//   }
+// if (requiresAuth && !authStore?.token) {
+//   next('/login')
+// } else {
+//   next()
+// }
 // })
 
 export default router

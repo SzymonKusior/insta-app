@@ -37,6 +37,8 @@ export default {
     onMounted(async () => {
       try {
         // Call the checkAuthStatus function when the app mounts
+        console.log('cheking auth')
+
         await authStore.checkAuthStatus()
       } catch (error) {
         console.error('Error checking authentication status:', error)

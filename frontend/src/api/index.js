@@ -121,10 +121,36 @@ const getImage = (id) => get(`${API_URL}/getImage/${id}`)
 const uploadPhoto = (formData) => file(`${API_URL}/photos`, formData)
 const deletePhoto = (id) => del(`${API_URL}/photos/${id}`)
 const uploadProfilePicture = (formData) => file(`${API_URL}/profile`, formData)
+const setProfilePicture = async (data) => {
+  const response = await fetch(`${API_URL}/profile/picture`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${localStorage.getItem('token')}`,
+    },
+    body: JSON.stringify(data),
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json()
+    throw new Error(errorData.error || 'Failed to set profile picture')
+  }
+
+  return await response.json()
+}
 const addPhotoTags = (data) => patch(`${API_URL}/photos/tags`, data)
 const getUserPhotos = (userEmail) => get(`${API_URL}/photos/user/${userEmail}`)
 const createTag = (tagName) => post(`${API_URL}/tags`, { name: tagName })
 const getAllTags = () => get(`${API_URL}/tags`)
+const getProfileImages = () => get(`${API_URL}/profile/images`)
+
+const getPhotoUrl = (photo) => {
+  if (photo.lastChange === 'original') {
+    return `http://localhost:3000/api/getImage/${photo.id}`
+  } else {
+    return `http://localhost:3000/api/getImage/${photo.id}/filter/${photo.lastChange}`
+  }
+}
 
 export {
   loginUser,
@@ -138,8 +164,11 @@ export {
   uploadPhoto,
   deletePhoto,
   uploadProfilePicture,
+  setProfilePicture,
   addPhotoTags,
   getUserPhotos,
   createTag,
   getAllTags,
+  getPhotoUrl,
+  getProfileImages,
 }

@@ -1,4 +1,6 @@
-import { createServer } from "http";
+import http from "http";
+import fs from "fs";
+import path from "path";
 import tracer from "tracer";
 import imageRouter from "./app/routers/imageRouter.js";
 import tagsRouter from "./app/routers/tagsRouter.js";
@@ -13,8 +15,7 @@ const logger = tracer.colorConsole({
 });
 
 const PORT = process.env.SERVER_PORT;
-const server = createServer(async (req, res) => {
-  // jsonController.convertTagsToJSON();
+const server = http.createServer(async (req, res) => {
   logger.log(`${req.method} ${req.url}`);
 
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -32,8 +33,32 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  // Serve static files from /upload
+  if (req.url.startsWith("/upload/")) {
+    const filePath = path.join(path.resolve(), decodeURIComponent(req.url));
+    fs.stat(filePath, (err, stat) => {
+      if (err || !stat.isFile()) {
+        res.writeHead(404, { "Content-Type": "text/plain" });
+        res.end("Not found");
+        return;
+      }
+      const ext = path.extname(filePath).toLowerCase();
+      const mimeTypes = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".gif": "image/gif",
+      };
+      res.writeHead(200, {
+        "Content-Type": mimeTypes[ext] || "application/octet-stream",
+      });
+      fs.createReadStream(filePath).pipe(res);
+    });
+    return;
+  }
+
   //images
-  if (req.url.search("/api/photos") != -1) {
+  else if (req.url.search("/api/photos") != -1) {
     await imageRouter(req, res);
   }
 

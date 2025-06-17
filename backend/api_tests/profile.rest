@@ -1,5 +1,5 @@
 GET http://localhost:3000/api/profile
-authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjE3NDk3NTM0OTE3NjEsImVtYWlsIjoidGVzdDVAZXhhbXBsZS5jb20iLCJpYXQiOjE3NDk3NTM0OTEsImV4cCI6MTc0OTc1NzA5MX0.QIcCEEvPPJhHG4MNWxpKWoP70EnjLSd8RebfZ7AR_rU
+authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjE3NTAxMjA4ODc5MjEsImVtYWlsIjoidGVzdDVAZXhhbXBsZS5jb20iLCJpYXQiOjE3NTAxMjA5NDIsImV4cCI6MTc1MDEyNDU0Mn0.3P2F0jJO9mZ0i5WYi2Ii5ZYdHz2cGd70NPrNu2ihCQU
 ###
 PATCH http://localhost:3000/api/profile
 Content-Type: application/json
@@ -11,7 +11,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjE3NDk3M
 }
 ###
 POST http://localhost:3000/api/profile HTTP/1.1
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjE3NDk3NTM0OTE3NjEsImVtYWlsIjoidGVzdDVAZXhhbXBsZS5jb20iLCJpYXQiOjE3NDk3NTM0OTEsImV4cCI6MTc0OTc1NzA5MX0.QIcCEEvPPJhHG4MNWxpKWoP70EnjLSd8RebfZ7AR_rU
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjE3NTAxMjA4ODc5MjEsImVtYWlsIjoidGVzdDVAZXhhbXBsZS5jb20iLCJpYXQiOjE3NTAxMjA5NDIsImV4cCI6MTc1MDEyNDU0Mn0.3P2F0jJO9mZ0i5WYi2Ii5ZYdHz2cGd70NPrNu2ihCQU
 Content-Type: multipart/form-data; boundary=----FormBoundary1234
 
 ------FormBoundary1234

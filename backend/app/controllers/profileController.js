@@ -179,19 +179,25 @@ const profileController = {
         // Process images using the uploaded file
         await profileController.processProfileImages(filePath, user.email);
 
-        // Remove the temporary uploaded file
-        // fs.unlinkSync(filePath);
+        // List processed images
+        const processedFiles = [
+          "profile.png",
+          "profile-cropped-square.png",
+          "profile-cropped-rounded.png",
+          "profile-cropped-with-border.png",
+          "profile-cropped-square-with-gradient.png",
+          "profile-cropped-square-with-letters.png",
+          "profile-cropped-square-with-pattern.png",
+        ];
+        const processedImages = processedFiles.map(
+          (fname) => `/upload/${user.email}/profile/${fname}`
+        );
 
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(
           JSON.stringify({
             message: "Profile picture uploaded and processed successfully",
-            user: user.email,
-            album: fields.album
-              ? Array.isArray(fields.album)
-                ? fields.album[0]
-                : fields.album
-              : null,
+            processedImages,
           })
         );
       } catch (error) {
@@ -363,6 +369,10 @@ const profileController = {
         .toFile(
           path.join(profileDir, `profile-cropped-square-with-gradient.png`)
         );
+      // Delete the original uploaded image at inputPath
+      if (fs.existsSync(inputPath)) {
+        fs.unlinkSync(inputPath);
+      }
     } catch (error) {
       console.error("Image processing error:", error);
       throw error;
@@ -432,6 +442,71 @@ const profileController = {
     });
 
     console.log(`Blacklist cleaned. Current size: ${tokenBlacklist.size}`);
+  },
+
+  setProfilePicture: (req, res) => {
+    const user = profileController.authorizeToken(req);
+    if (!user) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Unauthorized" }));
+      return;
+    }
+
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk.toString();
+    });
+    req.on("end", () => {
+      try {
+        const { profilePicture } = JSON.parse(body);
+        if (!profilePicture) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "No profile picture specified" }));
+          return;
+        }
+        user.profilePicture = profilePicture;
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true, profilePicture }));
+      } catch (error) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Internal Server Error" }));
+      }
+    });
+  },
+
+  getProfileImages: (req, res) => {
+    const user = profileController.authorizeToken(req);
+    if (!user) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Unauthorized" }));
+      return;
+    }
+
+    const profileDir = path.join(
+      path.resolve(),
+      "upload",
+      user.email,
+      "profile"
+    );
+
+    try {
+      if (!fs.existsSync(profileDir)) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ images: [] }));
+        return;
+      }
+      const files = fs
+        .readdirSync(profileDir)
+        .filter((f) => /\.(png|jpg|jpeg|gif)$/i.test(f))
+        .map((f) => `/upload/${user.email}/profile/${f}`);
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ images: files }));
+    } catch (error) {
+      console.error("Error listing profile images:", error);
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Internal Server Error" }));
+    }
   },
 };
 

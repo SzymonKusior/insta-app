@@ -33,30 +33,25 @@
 
     <div v-else class="photo-grid">
       <div v-for="photo in filteredPhotos" :key="photo.id" class="photo-card">
-        <img :src="`http://localhost:3000/api/getImage/${photo.id}`" :alt="photo.originalName" />
+        <img :src="getPhotoUrl(photo)" :alt="photo.originalName" />
 
         <div class="photo-info">
           <h3>{{ photo.originalName }}</h3>
           <p>Album: {{ photo.album }}</p>
 
           <div v-if="photo.tags && photo.tags.length" class="tags">
-            <span
-              v-for="tag in photo.tags"
-              :key="tag.id"
-              class="tag"
-              @click.stop="selectSingleTag(tag.id)"
-            >
+            <span v-for="tag in photo.tags" :key="tag.id" class="tag">
               {{ tag.name }}
             </span>
           </div>
 
-          <button @click="deletePhoto(photo.id)" class="delete-btn">
+          <!-- <button @click="deletePhoto(photo.id)" class="delete-btn">
             <template v-if="!deletingPhoto">Delete</template>
             <template v-else>
               Deleting...
               <span class="loader"></span>
             </template>
-          </button>
+          </button> -->
         </div>
       </div>
     </div>
@@ -66,6 +61,7 @@
 <script>
 import { usePhotoStore } from '@/store'
 import { ref, computed, onMounted } from 'vue'
+import { getPhotoUrl } from '@/api'
 
 export default {
   name: 'PhotoFeed',
@@ -103,12 +99,12 @@ export default {
         // Check if any of the photo's tags match any of the selected tags
         const hasMatchingTag = photo.tags.some((photoTag) => {
           return selectedTagObjects.some((selectedTag) => {
-            // If photo tag has an id property, compare by id
+            // If photo tag has an id property, compare to id
             if (photoTag.id !== undefined) {
               return Number(photoTag.id) === Number(selectedTag.id)
             }
 
-            // If photo tag only has a name property, compare by name
+            // If photo tag only has a name property, compare to name
             if (photoTag.name !== undefined && selectedTag.name !== undefined) {
               const photoTagName = photoTag.name.toLowerCase()
               const selectedTagName = selectedTag.name.toLowerCase()
@@ -192,6 +188,7 @@ export default {
       toggleTag,
       selectSingleTag,
       clearTagFilters,
+      getPhotoUrl, // <-- add this
     }
   },
 

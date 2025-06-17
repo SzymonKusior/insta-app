@@ -21,13 +21,16 @@
         <small class="helper-text">Add # prefix for better tag organization</small>
       </div>
 
-      <div class="form-info">
-        <p>
-          Photo will be uploaded to your personal album: <strong>{{ album }}</strong>
-        </p>
+      <div class="form-group">
+        <label for="filter">Select Filter</label>
+        <select id="filter" v-model="selectedFilter">
+          <option v-for="filter in availableFilters" :key="filter.key" :value="filter.key">
+            {{ filter.label }}
+          </option>
+        </select>
       </div>
 
-      <button type="submit" class="upload-button" :disabled="!file || uploading">
+      <button type="submit" class="upload-button" :disabled="!file">
         <span v-if="uploading">Uploading...</span>
         <span v-else>Upload Photo</span>
       </button>
@@ -45,9 +48,19 @@
     </div>
 
     <div v-else>
-      <!-- Your existing upload form -->
-      <h2>Upload a New Photo</h2>
-      <p v-if="authStore.userEmail" class="user-info">Uploading as: {{ authStore.userEmail }}</p>
+      <!-- Filter previews section -->
+      <div v-if="filterPreviews.length" class="filter-previews">
+        <div
+          v-for="filter in filterPreviews"
+          :key="filter.key"
+          class="filter-preview"
+          :class="{ selected: selectedFilter === filter.key }"
+          @click="selectedFilter = filter.key"
+        >
+          <img :src="filter.src" :alt="filter.label" />
+          <div class="filter-label">{{ filter.label }}</div>
+        </div>
+      </div>
 
       <!-- Rest of your form -->
     </div>
@@ -75,8 +88,8 @@ export default {
     const error = ref(null)
 
     // Redirect to login if not authenticated
-    onMounted(() => {
-      console.log(authStore.isAuthenticated)
+    onMounted(async () => {
+      await authStore.checkAuthStatus()
 
       if (!authStore.isAuthenticated) {
         router.push('/login')
@@ -85,21 +98,76 @@ export default {
 
     // Album is user's email, or empty string if not loaded yet
     const album = computed(() => {
+      console.log('czy bedzie email?', authStore)
+
       return authStore.user?.email || 'bruh'
     })
 
-    const handleFileChange = (event) => {
+    const availableFilters = [
+      { key: 'original', label: 'Original' },
+      { key: 'grayscale', label: 'Grayscale' },
+      { key: 'flip', label: 'Flip' },
+      { key: 'flop', label: 'Flop' },
+      // { key: 'rotate', label: 'Rotate' },
+      { key: 'tint', label: 'Tint' },
+      // Add more as needed
+    ]
+    const selectedFilter = ref('original')
+    const filterPreviews = ref([])
+    const uploadedImageId = ref(null)
+
+    const handleFileChange = async (event) => {
       const selectedFile = event.target.files[0]
+      if (!selectedFile) return
 
-      if (selectedFile) {
-        file.value = selectedFile
+      file.value = selectedFile // <-- Add this line
 
-        // Create preview
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          preview.value = e.target.result
-        }
-        reader.readAsDataURL(selectedFile)
+      // Upload the file to your backend and get imageId
+      const formData = new FormData()
+      formData.append('file', selectedFile)
+      formData.append('album', album.value)
+      const response = await fetch('http://localhost:3000/api/photos', {
+        method: 'POST',
+        body: formData,
+      })
+      const data = await response.json()
+      uploadedImageId.value = data.id
+
+      // Generate filter previews
+      await generateFilterPreviews(uploadedImageId.value)
+    }
+
+    const generateFilterPreviews = async (imageId) => {
+      filterPreviews.value = []
+
+      // Always add original
+      filterPreviews.value.push({
+        key: 'original',
+        label: 'Original',
+        src: `http://localhost:3000/api/getImage/${imageId}`,
+      })
+
+      // For each filter, PATCH and then GET the preview
+      for (const filter of availableFilters) {
+        if (filter.key === 'original') continue
+
+        // 1. PATCH to apply filter
+        await fetch('http://localhost:3000/api/filters/', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: imageId,
+            lastChange: filter.key,
+            params: {},
+          }),
+        })
+
+        // 2. GET the filtered image
+        filterPreviews.value.push({
+          key: filter.key,
+          label: filter.label,
+          src: `http://localhost:3000/api/getImage/${imageId}/filter/${filter.key}`,
+        })
       }
     }
 
@@ -110,19 +178,26 @@ export default {
       error.value = null
 
       try {
-        console.log('Starting upload process')
+        // 1. Delete the previous (temporary) photo if it exists
+        if (uploadedImageId.value) {
+          await fetch(`http://localhost:3000/api/photos/${uploadedImageId.value}`, {
+            method: 'DELETE',
+          })
+        }
+
+        // 2. Upload the original file again, including tags
         const formData = new FormData()
         formData.append('file', file.value)
         formData.append('album', album.value)
-        console.log('Using album name:', album.value)
 
-        // Upload the photo
-        console.log('Uploading photo...')
-        const photo = await photoStore.uploadNewPhoto(formData)
-        console.log('Photo uploaded successfully:', photo)
+        const uploadResponse = await fetch('http://localhost:3000/api/photos', {
+          method: 'POST',
+          body: formData,
+        })
+        const uploadData = await uploadResponse.json()
+        const newImageId = uploadData.id
 
-        // Add tags if provided
-        if (tags.value && photo?.id) {
+        if (tags.value && newImageId) {
           // Parse tags and format them as objects with name property
           const tagsList = tags.value
             .split(',')
@@ -153,10 +228,9 @@ export default {
 
             // Wait for all tag creation attempts to complete
             const processedTags = await Promise.all(createTagPromises)
-
             try {
               // Now add the tags to the photo
-              await photoStore.addTags(photo.id, processedTags)
+              await photoStore.addTags(newImageId, processedTags)
               console.log('Tags added successfully')
             } catch (tagError) {
               console.error('Error adding tags:', tagError)
@@ -165,17 +239,24 @@ export default {
           }
         }
 
-        // Reset form
+        // 3. PATCH the uploaded image with the selected filter
+        await fetch('http://localhost:3000/api/filters/', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: newImageId,
+            lastChange: selectedFilter.value,
+            params: {},
+          }),
+        })
+
+        // Reset form or redirect
         file.value = null
         preview.value = null
         tags.value = ''
-
-        console.log('Upload completed, navigating to home page')
-        // Navigate to home page after successful upload
         router.push('/')
       } catch (err) {
-        console.error('Upload error:', err)
-        error.value = 'Failed to upload photo. Please try again.'
+        error.value = 'Failed to upload and apply filter. Please try again.'
       } finally {
         uploading.value = false
       }
@@ -202,6 +283,9 @@ export default {
       handleUpload,
       authStore,
       reloadAuth,
+      availableFilters,
+      selectedFilter,
+      filterPreviews,
     }
   },
 }
@@ -237,6 +321,13 @@ h1 {
 }
 
 .form-group input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.form-group select {
   width: 100%;
   padding: 10px;
   border: 1px solid #ddd;
@@ -314,5 +405,38 @@ h1 {
   font-size: 0.9rem;
   color: #666;
   margin-bottom: 1rem;
+}
+
+.filter-previews {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.filter-preview {
+  cursor: pointer;
+  margin-right: 10px;
+  margin-bottom: 10px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  overflow: hidden;
+  transition: border-color 0.3s;
+}
+
+.filter-preview.selected {
+  border-color: #0095f6;
+}
+
+.filter-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.filter-label {
+  text-align: center;
+  padding: 5px 0;
+  font-size: 0.9rem;
+  color: #333;
 }
 </style>
