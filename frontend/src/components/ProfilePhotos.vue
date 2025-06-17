@@ -19,7 +19,12 @@
 
     <v-row v-else>
       <v-col v-for="photo in photos" :key="photo.id" cols="12" sm="6" md="4" lg="3">
-        <v-card class="photo-card" elevation="2">
+        <v-card
+          class="photo-card"
+          elevation="2"
+          @click="viewPhoto(photo.id)"
+          style="cursor: pointer"
+        >
           <v-img :src="getPhotoUrl(photo)" :alt="photo.originalName" height="200" cover></v-img>
 
           <v-overlay
@@ -131,9 +136,10 @@ export default {
       }
     }
 
-    onMounted(() => {
-      fetchUserPhotos()
-    })
+    // Add the navigation method
+    const viewPhoto = (photoId) => {
+      router.push(`/photo/${photoId}`)
+    }
 
     return {
       photos,
@@ -141,6 +147,7 @@ export default {
       deletePhoto,
       userEmail,
       getPhotoUrl,
+      viewPhoto,
     }
   },
 }

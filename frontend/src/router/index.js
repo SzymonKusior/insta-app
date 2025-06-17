@@ -7,16 +7,23 @@ import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import PhotoUploadView from '../views/PhotoUploadView.vue'
-// import ConfirmView from '../views/ConfirmView.vue'
+import SinglePhotoView from '../views/SinglePhotoView.vue' // Import the new view
 
 // Router configuration
 const routes = [
   { path: '/', component: HomeView },
   { path: '/login', component: LoginView },
   { path: '/register', component: RegisterView },
-  // { path: '/confirm', component: ConfirmView },
   { path: '/profile', component: ProfileView, meta: { requiresAuth: true } },
   { path: '/upload', component: PhotoUploadView, meta: { requiresAuth: true } },
+  {
+    path: '/photo/:id',
+    name: 'SinglePhoto',
+    component: SinglePhotoView,
+    meta: {
+      requiresAuth: false,
+    },
+  },
 ]
 
 const router = createRouter({

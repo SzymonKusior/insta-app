@@ -26,31 +26,27 @@
     </v-alert>
 
     <v-alert v-if="success" type="success" variant="tonal" class="mt-4" icon="mdi-check-circle">
-      Image uploaded successfully! {{ processedImages.length }} variants created.
+      Image uploaded successfully!
     </v-alert>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import useProfileStore from '@/store/profile'
+import { getProfileImages } from '@/api'
 
 const profileStore = useProfileStore()
 const emit = defineEmits(['uploaded'])
 const uploading = ref(false)
 const error = ref('')
 const success = ref(false)
-const processedImages = ref([])
 const selectedFile = ref(null)
 
 const onFileChange = async (file) => {
   // Clear previous states
   error.value = ''
   success.value = false
-  processedImages.value = []
-
-  // In Vuetify 3, the @update:model-value passes the file directly, not an array
-  console.log('Selected file:', file)
 
   if (!file) return
 
@@ -65,19 +61,25 @@ const onFileChange = async (file) => {
     const response = await profileStore.uploadProfileImage(formData)
     console.log('[ProfilePictureUpload] Upload response:', response)
 
-    // The backend should return the processed files
-    const processedFiles = response.processedFiles || []
-
-    if (processedFiles.length === 0) {
-      console.warn('[ProfilePictureUpload] No processed images returned from server')
-    }
-
-    // Store the processed images
-    processedImages.value = processedFiles
+    // Set success regardless of processed files count
     success.value = true
 
-    // Emit the processed images to parent component
-    emit('uploaded', processedFiles)
+    // Force a refresh to get the latest images from the server
+    try {
+      const imagesResponse = await getProfileImages()
+      console.log('[ProfilePictureUpload] Fetched updated images:', imagesResponse)
+
+      if (imagesResponse.images && imagesResponse.images.length > 0) {
+        // Pass the original image paths without timestamps
+        console.log('[ProfilePictureUpload] Emitting clean image paths:', imagesResponse.images)
+        emit('uploaded', imagesResponse.images)
+      } else {
+        console.warn('[ProfilePictureUpload] No images returned from server after upload')
+      }
+    } catch (fetchErr) {
+      console.error('[ProfilePictureUpload] Error fetching updated images:', fetchErr)
+      emit('uploaded', [])
+    }
   } catch (err) {
     console.error('[ProfilePictureUpload] Upload error:', err)
     error.value = err.message || 'Upload failed'
@@ -85,6 +87,11 @@ const onFileChange = async (file) => {
     uploading.value = false
   }
 }
+
+// If you have any mounted logic, use onMounted
+onMounted(() => {
+  console.log('[ProfilePictureUpload] Component mounted')
+})
 </script>
 
 <style scoped>

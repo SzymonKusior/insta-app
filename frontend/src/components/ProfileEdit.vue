@@ -208,17 +208,36 @@ export default {
       }
     }
 
+    // Only updating the onPictureUploaded method in the setup function
     const onPictureUploaded = async (processedImages) => {
       console.log('[ProfileEdit] Image uploaded with processed images:', processedImages)
 
-      // Update uploadedImages with the newly processed images
-      uploadedImages.value = processedImages
-
-      // Reset the existing images flag since we're replacing with new ones
-      hasExistingImages.value = false
-
-      // Signal the selector to update with the new images
+      // Force refresh of the selector regardless of whether images were returned
       selectorRefreshTrigger.value++
+
+      // If we received processed images directly, use them
+      if (processedImages && processedImages.length > 0) {
+        uploadedImages.value = processedImages
+        hasExistingImages.value = true
+      } else {
+        // Otherwise, fetch the latest images from the server
+        try {
+          const res = await getProfileImages()
+          console.log('[ProfileEdit] Re-fetched images after upload:', res)
+
+          if (res.images && res.images.length > 0) {
+            uploadedImages.value = res.images
+            hasExistingImages.value = true
+          } else {
+            console.warn('[ProfileEdit] No images found after upload')
+            uploadedImages.value = []
+            hasExistingImages.value = false
+          }
+        } catch (error) {
+          console.error('[ProfileEdit] Error fetching images after upload:', error)
+          uploadedImages.value = []
+        }
+      }
     }
 
     const onProfilePicSelected = (url) => {

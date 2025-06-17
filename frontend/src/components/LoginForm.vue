@@ -23,8 +23,8 @@
           required
         ></v-text-field>
 
-        <v-alert v-if="authStore.getError" type="error" variant="tonal" class="mb-4">
-          {{ authStore.getError }}
+        <v-alert v-if="loginError" type="error" variant="tonal" class="mb-4">
+          {{ loginError }}
         </v-alert>
 
         <v-btn type="submit" color="primary" block :loading="authStore.isLoading" class="mt-2">
@@ -37,6 +37,7 @@
 
 <script>
 import { useAuthStore } from '@/store'
+import { ref, computed } from 'vue'
 
 export default {
   name: 'LoginForm',
@@ -45,6 +46,7 @@ export default {
     return {
       email: '',
       password: '',
+      loginError: '',
     }
   },
 
@@ -57,13 +59,24 @@ export default {
 
   methods: {
     async handleLogin() {
-      await this.authStore.login({
-        email: this.email,
-        password: this.password,
-      })
+      this.loginError = '' // Clear previous errors
 
-      if (this.authStore.isAuthenticated) {
-        this.$router.push('/')
+      try {
+        await this.authStore.login({
+          email: this.email,
+          password: this.password,
+        })
+
+        if (this.authStore.isAuthenticated) {
+          this.$router.push('/')
+        } else {
+          // If we're not authenticated after login attempt
+          this.loginError = 'Login failed. Please check your credentials.'
+        }
+      } catch (error) {
+        // Handle any exceptions during login
+        console.error('Login error:', error)
+        this.loginError = 'An error occurred during login. Please try again.'
       }
     },
   },

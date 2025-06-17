@@ -3,13 +3,7 @@
     <v-container>
       <v-row justify="center">
         <v-col cols="12" md="8">
-          <v-card class="pa-4 mb-6" elevation="2">
-            <v-card-title class="text-center text-h4 py-4"> Upload Photo </v-card-title>
-
-            <v-card-text>
-              <PhotoUpload />
-            </v-card-text>
-          </v-card>
+          <PhotoUpload />
         </v-col>
       </v-row>
     </v-container>

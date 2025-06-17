@@ -2,7 +2,7 @@
   <v-app>
     <v-app-bar elevation="1">
       <v-app-bar-title class="text-h5 font-weight-bold">
-        <router-link to="/" class="text-decoration-none text-black">InstaAp</router-link>
+        <router-link to="/" class="text-decoration-none text-black">InstaApp</router-link>
       </v-app-bar-title>
 
       <v-spacer></v-spacer>
@@ -26,7 +26,7 @@
     </v-main>
 
     <v-footer class="d-flex justify-center pa-4 text-caption text-grey">
-      &copy; {{ new Date().getFullYear() }} InstaAp
+      &copy; {{ new Date().getFullYear() }} InstaApp Szymon Kusior 4ib
     </v-footer>
   </v-app>
 </template>

@@ -69,7 +69,12 @@
 
     <v-row v-else>
       <v-col v-for="photo in filteredPhotos" :key="photo.id" cols="12" sm="6" md="4" lg="3">
-        <v-card class="photo-card" elevation="2">
+        <v-card
+          class="photo-card"
+          elevation="2"
+          @click="viewPhoto(photo.id)"
+          style="cursor: pointer"
+        >
           <v-img :src="getPhotoUrl(photo)" :alt="photo.originalName" height="250" cover></v-img>
 
           <v-card-title class="text-subtitle-1 text-truncate">
@@ -115,12 +120,14 @@
 import { usePhotoStore } from '@/store'
 import { ref, computed, onMounted } from 'vue'
 import { getPhotoUrl } from '@/api'
+import { useRouter } from 'vue-router'
 
 export default {
   name: 'PhotoFeed',
 
   setup() {
     const photoStore = usePhotoStore()
+    const router = useRouter() // Add the router
     const deletingPhoto = ref(false)
     const tags = ref([])
     const tagsLoading = ref(true)
@@ -227,6 +234,11 @@ export default {
       }
     }
 
+    // Add the navigation method
+    const viewPhoto = (photoId) => {
+      router.push(`/photo/${photoId}`)
+    }
+
     onMounted(() => {
       fetchTags()
     })
@@ -242,6 +254,7 @@ export default {
       selectSingleTag,
       clearTagFilters,
       getPhotoUrl,
+      viewPhoto,
     }
   },
 
