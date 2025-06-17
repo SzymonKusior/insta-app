@@ -3,24 +3,26 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import pinia from '@/store'
 import router from './router'
-import PrimeVue from 'primevue/config'
 
-// Import PrimeVue
-import Aura from '@primeuix/themes/aura'
-import { Ripple } from 'primevue'
-// Uncomment if you want to use PrimeVue styling
-// import 'primevue/resources/themes/lara-light-blue/theme.css'
-// import 'primevue/resources/primevue.min.css'
-// import 'primeicons/primeicons.css'
-
+import 'vuetify/styles'
+import { createVuetify } from 'vuetify'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
+import { aliases, mdi } from 'vuetify/iconsets/mdi'
+const vuetify = createVuetify({
+  icons: {
+    defaultSet: 'mdi',
+    aliases,
+    sets: {
+      mdi,
+    },
+  },
+  components,
+  directives,
+})
 // Create and mount app
 const app = createApp(App)
 app.use(pinia)
 app.use(router)
-app.use(PrimeVue, {
-  theme: {
-    preset: Aura,
-    Ripple: true,
-  },
-})
+app.use(vuetify)
 app.mount('#app')

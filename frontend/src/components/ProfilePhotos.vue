@@ -1,34 +1,70 @@
 <template>
   <div class="profile-photos">
-    <h2>My Photos</h2>
+    <h2 class="text-h5 mb-6">My Photos</h2>
 
-    <div v-if="loading" class="loading">Loading your photos...</div>
+    <v-progress-circular
+      v-if="loading"
+      indeterminate
+      color="primary"
+      class="d-block mx-auto my-8"
+    ></v-progress-circular>
 
-    <div v-else-if="!photos.length" class="no-photos">
-      <p>You haven't uploaded any photos yet.</p>
-      <router-link to="/upload" class="upload-btn">
-        <i class="pi pi-upload"></i> Upload Your First Photo
-      </router-link>
-    </div>
+    <v-sheet v-else-if="!photos.length" class="pa-8 rounded text-center" color="grey-lighten-4">
+      <v-icon icon="mdi-image-off" size="large" color="grey" class="mb-4"></v-icon>
+      <p class="text-body-1 mb-4">You haven't uploaded any photos yet.</p>
+      <v-btn to="/upload" color="primary" prepend-icon="mdi-upload">
+        Upload Your First Photo
+      </v-btn>
+    </v-sheet>
 
-    <div v-else class="photos-grid">
-      <div v-for="photo in photos" :key="photo.id" class="photo-card">
-        <img :src="getPhotoUrl(photo)" :alt="photo.originalName" />
+    <v-row v-else>
+      <v-col v-for="photo in photos" :key="photo.id" cols="12" sm="6" md="4" lg="3">
+        <v-card class="photo-card" elevation="2">
+          <v-img :src="getPhotoUrl(photo)" :alt="photo.originalName" height="200" cover></v-img>
 
-        <div class="photo-overlay">
-          <h3>{{ photo.originalName }}</h3>
-          <p>Album: {{ photo.album }}</p>
+          <v-overlay
+            activator="parent"
+            location-strategy="connected"
+            class="align-end"
+            scrim="black"
+            scroll-strategy="close"
+          >
+            <v-card class="pa-2 bg-black-opacity-50" flat>
+              <v-card-title class="text-h6 text-white pa-1">
+                {{ photo.originalName }}
+              </v-card-title>
 
-          <div v-if="photo.tags && photo.tags.length" class="tags">
-            <span v-for="tag in photo.tags" :key="tag.name" class="tag">{{ tag.name }}</span>
-          </div>
+              <v-card-subtitle class="text-white pa-1"> Album: {{ photo.album }} </v-card-subtitle>
 
-          <button @click="deletePhoto(photo.id)" class="delete-btn">
-            <i class="pi pi-trash"></i> Delete
-          </button>
-        </div>
-      </div>
-    </div>
+              <div v-if="photo.tags && photo.tags.length" class="px-1 py-2">
+                <v-chip
+                  v-for="tag in photo.tags"
+                  :key="tag.name"
+                  size="small"
+                  class="ma-1"
+                  color="primary-lighten-4"
+                  variant="outlined"
+                >
+                  {{ tag.name }}
+                </v-chip>
+              </div>
+
+              <v-card-actions class="pa-1">
+                <v-btn
+                  color="error"
+                  variant="tonal"
+                  block
+                  prepend-icon="mdi-delete"
+                  @click="deletePhoto(photo.id)"
+                >
+                  Delete
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-overlay>
+        </v-card>
+      </v-col>
+    </v-row>
   </div>
 </template>
 
@@ -37,6 +73,7 @@ import { ref, onMounted, computed } from 'vue'
 import { usePhotoStore, useAuthStore } from '@/store'
 import { getPhotoUrl, getUserPhotos } from '@/api'
 import { useRouter } from 'vue-router'
+
 export default {
   name: 'ProfilePhotos',
 
@@ -46,8 +83,10 @@ export default {
     const photos = ref([])
     const loading = ref(true)
     const router = useRouter()
+
     // Use computed for user email
     const userEmail = computed(() => authStore.user?.email || '')
+
     // Check authentication status on mount
     onMounted(async () => {
       await authStore.checkAuthStatus()
@@ -57,6 +96,7 @@ export default {
       }
       fetchUserPhotos()
     })
+
     const fetchUserPhotos = async () => {
       loading.value = true
       try {
@@ -99,7 +139,7 @@ export default {
       photos,
       loading,
       deletePhoto,
-      userEmail, // Export if you want to use it in the template
+      userEmail,
       getPhotoUrl,
     }
   },
@@ -107,115 +147,16 @@ export default {
 </script>
 
 <style scoped>
-.profile-photos {
-  margin-top: 20px;
-}
-
-.profile-photos h2 {
-  margin-bottom: 20px;
-  font-size: 22px;
-}
-
-.loading,
-.no-photos {
-  text-align: center;
-  padding: 40px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-}
-
-.upload-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  margin-top: 15px;
-  padding: 10px 20px;
-  background-color: #0095f6;
-  color: white;
-  border-radius: 4px;
-  text-decoration: none;
-  transition: background-color 0.2s;
-}
-
-.upload-btn:hover {
-  background-color: #0077c5;
-}
-
-.photos-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 15px;
-}
-
 .photo-card {
-  position: relative;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s;
+  height: 100%;
 }
 
 .photo-card:hover {
   transform: translateY(-5px);
 }
 
-.photo-card img {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-}
-
-.photo-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 10px;
-  transform: translateY(100%);
-  transition: transform 0.3s;
-}
-
-.photo-card:hover .photo-overlay {
-  transform: translateY(0);
-}
-
-.photo-overlay h3 {
-  margin: 0 0 5px;
-  font-size: 16px;
-}
-
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin: 8px 0;
-}
-
-.tag {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 12px;
-}
-
-.delete-btn {
-  width: 100%;
-  padding: 8px;
-  margin-top: 10px;
-  background-color: #ff3b30;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-}
-
-.delete-btn:hover {
-  background-color: #d9342b;
+.bg-black-opacity-50 {
+  background-color: rgba(0, 0, 0, 0.5) !important;
 }
 </style>

@@ -1,69 +1,119 @@
 <!-- frontend/src/components/PhotoUpload.vue -->
 <template>
   <div class="upload-container">
-    <h1>Upload Photo</h1>
+    <v-card class="pa-4 mb-6" elevation="2">
+      <v-card-title class="text-center text-h5 pb-4">Upload Photo</v-card-title>
 
-    <form @submit.prevent="handleUpload" class="upload-form">
-      <div class="form-group">
-        <label for="file">Select Photo</label>
-        <input type="file" id="file" @change="handleFileChange" accept="image/*" required />
-        <div v-if="preview" class="image-preview">
-          <img :src="preview" alt="Preview" />
-        </div>
-      </div>
+      <v-card-text>
+        <v-form @submit.prevent="handleUpload">
+          <v-file-input
+            accept="image/*"
+            label="Select Photo"
+            variant="outlined"
+            @change="handleFileChange"
+            prepend-icon="mdi-file-image"
+            required
+            :disabled="uploading"
+          ></v-file-input>
 
-      <!-- Album field is now hidden -->
-      <input type="hidden" v-model="album" />
+          <v-img
+            v-if="preview"
+            :src="preview"
+            alt="Preview"
+            class="my-4 rounded"
+            max-height="300"
+            contain
+          ></v-img>
 
-      <div class="form-group">
-        <label for="tags">Tags (Separate with commas)</label>
-        <input type="text" id="tags" v-model="tags" placeholder="e.g. #nature, #sunset, #beach" />
-        <small class="helper-text">Add # prefix for better tag organization</small>
-      </div>
+          <!-- Album field is now hidden -->
+          <input type="hidden" v-model="album" />
 
-      <div class="form-group">
-        <label for="filter">Select Filter</label>
-        <select id="filter" v-model="selectedFilter">
-          <option v-for="filter in availableFilters" :key="filter.key" :value="filter.key">
-            {{ filter.label }}
-          </option>
-        </select>
-      </div>
+          <v-text-field
+            v-model="tags"
+            label="Tags (Separate with commas)"
+            variant="outlined"
+            prepend-icon="mdi-tag-multiple"
+            placeholder="e.g. #nature, #sunset, #beach"
+            hint="Add # prefix for better tag organization"
+            persistent-hint
+            class="mt-4"
+          ></v-text-field>
 
-      <button type="submit" class="upload-button" :disabled="!file">
-        <span v-if="uploading">Uploading...</span>
-        <span v-else>Upload Photo</span>
-      </button>
-    </form>
+          <v-select
+            v-model="selectedFilter"
+            :items="availableFilters"
+            item-title="label"
+            item-value="key"
+            label="Select Filter"
+            variant="outlined"
+            prepend-icon="mdi-filter"
+            return-object
+            class="mt-4"
+          ></v-select>
 
-    <div v-if="error" class="error-message">
-      {{ error }}
-    </div>
+          <v-btn
+            type="submit"
+            color="primary"
+            block
+            :loading="uploading"
+            :disabled="!file"
+            class="mt-6"
+            prepend-icon="mdi-upload"
+          >
+            {{ uploading ? 'Uploading...' : 'Upload Photo' }}
+          </v-btn>
+        </v-form>
 
-    <div v-if="authStore.loading" class="loading">Loading user data...</div>
+        <v-alert v-if="error" type="error" variant="tonal" class="mt-4">
+          {{ error }}
+        </v-alert>
 
-    <div v-else-if="!authStore.user" class="auth-error">
-      Unable to load user data. Please try <a @click="reloadAuth" href="#">refreshing</a> or
-      <router-link to="/login">login again</router-link>.
-    </div>
+        <v-progress-circular
+          v-if="authStore.loading"
+          indeterminate
+          color="primary"
+          class="d-block mx-auto my-6"
+        ></v-progress-circular>
 
-    <div v-else>
-      <!-- Filter previews section -->
-      <div v-if="filterPreviews.length" class="filter-previews">
-        <div
-          v-for="filter in filterPreviews"
-          :key="filter.key"
-          class="filter-preview"
-          :class="{ selected: selectedFilter === filter.key }"
-          @click="selectedFilter = filter.key"
-        >
-          <img :src="filter.src" :alt="filter.label" />
-          <div class="filter-label">{{ filter.label }}</div>
-        </div>
-      </div>
+        <v-alert v-else-if="!authStore.user" type="warning" variant="tonal" class="mt-4">
+          Unable to load user data. Please try
+          <a @click.prevent="reloadAuth" class="text-primary text-decoration-underline"
+            >refreshing</a
+          >
+          or
+          <router-link to="/login" class="text-primary text-decoration-underline"
+            >login again</router-link
+          >.
+        </v-alert>
+      </v-card-text>
+    </v-card>
 
-      <!-- Rest of your form -->
-    </div>
+    <!-- Filter previews section -->
+    <v-sheet
+      v-if="filterPreviews.length"
+      class="filter-previews-container mt-4 pa-4"
+      rounded
+      elevation="1"
+    >
+      <h3 class="text-h6 mb-4">Filter Previews</h3>
+
+      <v-row>
+        <v-col v-for="filter in filterPreviews" :key="filter.key" cols="6" sm="4" md="3">
+          <v-card
+            class="filter-preview"
+            :elevation="selectedFilter.key === filter.key ? 6 : 2"
+            :class="{ 'border-primary': selectedFilter.key === filter.key }"
+            @click="selectedFilter = availableFilters.find((f) => f.key === filter.key)"
+          >
+            <v-img :src="filter.src" :alt="filter.label" height="150" cover></v-img>
+
+            <v-card-text class="text-center pa-2">
+              {{ filter.label }}
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-sheet>
   </div>
 </template>
 
@@ -108,11 +158,9 @@ export default {
       { key: 'grayscale', label: 'Grayscale' },
       { key: 'flip', label: 'Flip' },
       { key: 'flop', label: 'Flop' },
-      // { key: 'rotate', label: 'Rotate' },
       { key: 'tint', label: 'Tint' },
-      // Add more as needed
     ]
-    const selectedFilter = ref('original')
+    const selectedFilter = ref(availableFilters[0])
     const filterPreviews = ref([])
     const uploadedImageId = ref(null)
 
@@ -120,21 +168,30 @@ export default {
       const selectedFile = event.target.files[0]
       if (!selectedFile) return
 
-      file.value = selectedFile // <-- Add this line
+      file.value = selectedFile
+
+      // Create preview URL
+      preview.value = URL.createObjectURL(selectedFile)
 
       // Upload the file to your backend and get imageId
       const formData = new FormData()
       formData.append('file', selectedFile)
       formData.append('album', album.value)
-      const response = await fetch('http://localhost:3000/api/photos', {
-        method: 'POST',
-        body: formData,
-      })
-      const data = await response.json()
-      uploadedImageId.value = data.id
 
-      // Generate filter previews
-      await generateFilterPreviews(uploadedImageId.value)
+      try {
+        const response = await fetch('http://localhost:3000/api/photos', {
+          method: 'POST',
+          body: formData,
+        })
+        const data = await response.json()
+        uploadedImageId.value = data.id
+
+        // Generate filter previews
+        await generateFilterPreviews(uploadedImageId.value)
+      } catch (err) {
+        error.value = 'Failed to upload image for preview. Please try again.'
+        console.error('Error uploading for preview:', err)
+      }
     }
 
     const generateFilterPreviews = async (imageId) => {
@@ -151,23 +208,27 @@ export default {
       for (const filter of availableFilters) {
         if (filter.key === 'original') continue
 
-        // 1. PATCH to apply filter
-        await fetch('http://localhost:3000/api/filters/', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: imageId,
-            lastChange: filter.key,
-            params: {},
-          }),
-        })
+        try {
+          // 1. PATCH to apply filter
+          await fetch('http://localhost:3000/api/filters/', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: imageId,
+              lastChange: filter.key,
+              params: {},
+            }),
+          })
 
-        // 2. GET the filtered image
-        filterPreviews.value.push({
-          key: filter.key,
-          label: filter.label,
-          src: `http://localhost:3000/api/getImage/${imageId}/filter/${filter.key}`,
-        })
+          // 2. GET the filtered image
+          filterPreviews.value.push({
+            key: filter.key,
+            label: filter.label,
+            src: `http://localhost:3000/api/getImage/${imageId}/filter/${filter.key}`,
+          })
+        } catch (err) {
+          console.error(`Error generating preview for ${filter.key}:`, err)
+        }
       }
     }
 
@@ -245,7 +306,7 @@ export default {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             id: newImageId,
-            lastChange: selectedFilter.value,
+            lastChange: selectedFilter.value.key,
             params: {},
           }),
         })
@@ -257,6 +318,7 @@ export default {
         router.push('/')
       } catch (err) {
         error.value = 'Failed to upload and apply filter. Please try again.'
+        console.error('Upload error:', err)
       } finally {
         uploading.value = false
       }
@@ -293,150 +355,26 @@ export default {
 
 <style scoped>
 .upload-container {
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
-  padding: 20px;
 }
 
-h1 {
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-.upload-form {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: 500;
-}
-
-.form-group input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.form-group select {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.helper-text {
-  display: block;
-  margin-top: 5px;
-  color: #666;
-  font-size: 0.8rem;
-}
-
-.form-info {
-  margin-bottom: 20px;
-  padding: 10px;
-  background-color: #f0f8ff;
-  border: 1px solid #cce5ff;
-  border-radius: 4px;
-  color: #0066cc;
-}
-
-.image-preview {
-  margin-top: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  overflow: hidden;
-  max-height: 300px;
-}
-
-.image-preview img {
-  width: 100%;
-  height: auto;
-}
-
-.upload-button {
-  width: 100%;
-  padding: 12px;
-  background-color: #0095f6;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  cursor: pointer;
-}
-
-.upload-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.error-message {
-  margin-top: 20px;
-  padding: 10px;
-  background-color: #ffdddd;
-  border: 1px solid #ff8888;
-  border-radius: 4px;
-  color: #cc0000;
-}
-
-.loading,
-.auth-error {
-  text-align: center;
-  padding: 2rem;
-  margin: 1rem 0;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-}
-
-.auth-error {
-  color: #d32f2f;
-}
-
-.user-info {
-  font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 1rem;
-}
-
-.filter-previews {
-  display: flex;
-  flex-wrap: wrap;
-  margin-top: 10px;
+.filter-previews-container {
+  background-color: white;
 }
 
 .filter-preview {
   cursor: pointer;
-  margin-right: 10px;
-  margin-bottom: 10px;
-  border: 1px solid transparent;
-  border-radius: 4px;
+  transition: all 0.2s;
   overflow: hidden;
-  transition: border-color 0.3s;
+  height: 100%;
 }
 
-.filter-preview.selected {
-  border-color: #0095f6;
+.filter-preview:hover {
+  transform: scale(1.03);
 }
 
-.filter-preview img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.filter-label {
-  text-align: center;
-  padding: 5px 0;
-  font-size: 0.9rem;
-  color: #333;
+.border-primary {
+  border: 2px solid rgb(var(--v-theme-primary));
 }
 </style>

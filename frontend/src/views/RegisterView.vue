@@ -1,85 +1,105 @@
 <template>
   <div class="register-view">
-    <div class="auth-container">
+    <v-card class="register-card mx-auto" max-width="500" elevation="4">
       <!-- Registration form - shown initially -->
       <div v-if="!confirmationToken">
-        <h2>Create an Account</h2>
-        <form @submit.prevent="handleRegister" class="register-form">
-          <div class="form-group">
-            <label for="username">Username</label>
-            <input type="text" id="username" v-model="formData.username" required />
-          </div>
+        <v-card-title class="text-center text-h5 py-4"> Create an Account </v-card-title>
 
-          <div class="form-group">
-            <label for="lastName">Last Name</label>
-            <input type="text" id="lastName" v-model="formData.lastName" required />
-          </div>
-
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" v-model="formData.email" required />
-          </div>
-
-          <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" v-model="formData.password" required />
-          </div>
-
-          <div class="form-group">
-            <label for="confirmPassword">Confirm Password</label>
-            <input
-              type="password"
-              id="confirmPassword"
-              v-model="formData.confirmPassword"
+        <v-card-text>
+          <v-form @submit.prevent="handleRegister">
+            <v-text-field
+              v-model="formData.username"
+              label="Username"
+              prepend-inner-icon="mdi-account"
+              variant="outlined"
               required
-            />
+            ></v-text-field>
+
+            <v-text-field
+              v-model="formData.lastName"
+              label="Last Name"
+              prepend-inner-icon="mdi-account-outline"
+              variant="outlined"
+              required
+            ></v-text-field>
+
+            <v-text-field
+              v-model="formData.email"
+              label="Email"
+              type="email"
+              prepend-inner-icon="mdi-email"
+              variant="outlined"
+              required
+            ></v-text-field>
+
+            <v-text-field
+              v-model="formData.password"
+              label="Password"
+              type="password"
+              prepend-inner-icon="mdi-lock"
+              variant="outlined"
+              required
+            ></v-text-field>
+
+            <v-text-field
+              v-model="formData.confirmPassword"
+              label="Confirm Password"
+              type="password"
+              prepend-inner-icon="mdi-lock-check"
+              variant="outlined"
+              required
+            ></v-text-field>
+
+            <v-alert v-if="error" type="error" variant="tonal" class="mb-4">
+              {{ error }}
+            </v-alert>
+
+            <v-btn type="submit" color="primary" block :loading="authStore.isLoading" class="mt-2">
+              Register
+            </v-btn>
+          </v-form>
+
+          <v-divider class="my-4"></v-divider>
+
+          <div class="text-center">
+            Already have an account?
+            <v-btn variant="text" color="primary" to="/login">Login</v-btn>
           </div>
-
-          <div v-if="error" class="error-message">
-            {{ error }}
-          </div>
-
-          <button type="submit" :disabled="authStore.isLoading">
-            <template v-if="!authStore.isLoading">Register</template>
-            <template v-else>
-              Registering...
-              <span class="loader"></span>
-            </template>
-          </button>
-        </form>
-
-        <div class="login-link">
-          Already have an account?
-          <router-link to="/login">Login</router-link>
-        </div>
+        </v-card-text>
       </div>
 
       <!-- Confirmation section - shown after registration -->
       <div v-else class="confirmation-section">
-        <div class="success-icon">✓</div>
-        <h2>Almost Done!</h2>
-        <p>
-          Your account has been created successfully. Please click the button below to confirm your
-          account and start using the platform.
-        </p>
+        <v-card-text class="text-center py-4">
+          <v-icon color="success" size="x-large" icon="mdi-check-circle" class="mb-4"></v-icon>
 
-        <button @click="confirmAccount" class="confirm-button" :disabled="confirmationLoading">
-          <template v-if="!confirmationLoading">Confirm Account</template>
-          <template v-else>
-            Confirming...
-            <span class="loader"></span>
-          </template>
-        </button>
+          <h2 class="text-h5 mb-4">Almost Done!</h2>
 
-        <div v-if="confirmationError" class="error-message">
-          {{ confirmationError }}
-        </div>
+          <p class="text-body-1 mb-6">
+            Your account has been created successfully. Please click the button below to confirm
+            your account and start using the platform.
+          </p>
 
-        <div v-if="confirmationSuccess" class="success-message">
-          {{ confirmationSuccess }}
-        </div>
+          <v-btn
+            @click="confirmAccount"
+            color="primary"
+            :loading="confirmationLoading"
+            size="large"
+            class="mb-4"
+          >
+            Confirm Account
+          </v-btn>
+
+          <v-alert v-if="confirmationError" type="error" variant="tonal" class="mb-4">
+            {{ confirmationError }}
+          </v-alert>
+
+          <v-alert v-if="confirmationSuccess" type="success" variant="tonal" class="mb-4">
+            {{ confirmationSuccess }}
+          </v-alert>
+        </v-card-text>
       </div>
-    </div>
+    </v-card>
   </div>
 </template>
 
@@ -224,158 +244,8 @@ export default {
   padding: 20px;
 }
 
-.auth-container {
-  background: white;
-  border: 1px solid #dbdbdb;
-  border-radius: 8px;
-  padding: 30px;
+.register-card {
   width: 100%;
-  max-width: 450px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-h2 {
-  text-align: center;
-  margin-bottom: 20px;
-  color: #333;
-}
-
-.register-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.form-group label {
-  margin-bottom: 5px;
-  font-weight: 500;
-  color: #555;
-}
-
-input {
-  padding: 12px;
-  border: 1px solid #dbdbdb;
-  border-radius: 4px;
-  font-size: 14px;
-  transition: border-color 0.2s;
-}
-
-input:focus {
-  outline: none;
-  border-color: #0095f6;
-  box-shadow: 0 0 0 2px rgba(0, 149, 246, 0.1);
-}
-
-button {
-  background: #0095f6;
-  color: white;
-  border: none;
-  padding: 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-top: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 600;
-  transition: background-color 0.2s;
-}
-
-button:hover:not(:disabled) {
-  background: #0084d6;
-}
-
-button:disabled {
-  background: #8fc5e9;
-  cursor: not-allowed;
-}
-
-.error-message {
-  color: #e74c3c;
-  text-align: center;
-  padding: 10px;
-  background: #fdf2f2;
-  border: 1px solid #f5c6cb;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.success-message {
-  color: #27ae60;
-  text-align: center;
-  padding: 10px;
-  background: #f0f8f0;
-  border: 1px solid #c3e6c3;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.login-link {
-  text-align: center;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #dbdbdb;
-  font-size: 14px;
-  color: #666;
-}
-
-.login-link a {
-  color: #0095f6;
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.login-link a:hover {
-  text-decoration: underline;
-}
-
-.loader {
-  width: 15px;
-  height: 15px;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  border-top-color: transparent;
-  margin-left: 10px;
-  animation: spin 1s linear infinite;
-}
-
-.confirmation-section {
-  text-align: center;
-}
-
-.success-icon {
-  font-size: 48px;
-  color: #27ae60;
-  margin-bottom: 15px;
-}
-
-.confirmation-section p {
-  color: #666;
-  margin-bottom: 25px;
-  line-height: 1.5;
-}
-
-.confirm-button {
-  margin: 20px auto;
-  min-width: 150px;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (max-width: 480px) {
-  .auth-container {
-    padding: 20px;
-    margin: 10px;
-  }
+  padding: 1rem;
 }
 </style>

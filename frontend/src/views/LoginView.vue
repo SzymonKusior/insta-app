@@ -2,9 +2,12 @@
   <div class="login-view">
     <div class="auth-container">
       <LoginForm />
-      <div class="register-link">
+
+      <v-divider class="my-4"></v-divider>
+
+      <div class="text-center">
         Don't have an account?
-        <router-link to="/register">Register</router-link>
+        <v-btn variant="text" color="primary" to="/register">Register</v-btn>
       </div>
     </div>
   </div>
@@ -27,28 +30,11 @@ export default {
   justify-content: center;
   align-items: center;
   min-height: 80vh;
+  padding: 20px;
 }
 
 .auth-container {
-  background: white;
-  border: 1px solid #dbdbdb;
-  border-radius: 4px;
-  padding: 20px;
   width: 100%;
-  max-width: 450px;
-}
-
-.register-link {
-  text-align: center;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #dbdbdb;
-  font-size: 14px;
-}
-
-.register-link a {
-  color: #0095f6;
-  text-decoration: none;
-  font-weight: 600;
+  max-width: 500px;
 }
 </style>

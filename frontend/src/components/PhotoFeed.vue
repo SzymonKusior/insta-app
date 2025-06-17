@@ -2,59 +2,112 @@
 <template>
   <div class="photo-feed">
     <!-- Tag filtering section -->
-    <div class="tag-filter">
-      <h3>Filter by tags:</h3>
-      <div v-if="tagsLoading" class="loading-tags">Loading tags...</div>
-      <div v-else class="tags-container">
-        <div
-          v-for="tag in tags"
-          :key="tag.id"
-          class="tag-chip"
-          :class="{ selected: selectedTags.includes(tag.id) }"
-          @click="toggleTag(tag.id)"
+    <v-sheet class="mb-6 pa-4 rounded" elevation="1">
+      <h3 class="text-h6 mb-3">Filter by tags:</h3>
+
+      <v-progress-circular
+        v-if="tagsLoading"
+        indeterminate
+        color="primary"
+        class="mx-auto d-block my-2"
+      ></v-progress-circular>
+
+      <div v-else>
+        <v-chip-group>
+          <v-chip
+            v-for="tag in tags"
+            :key="tag.id"
+            :variant="selectedTags.includes(tag.id) ? 'flat' : 'outlined'"
+            :class="selectedTags.includes(tag.id) ? 'text-white' : ''"
+            @click="toggleTag(tag.id)"
+            class="ma-1"
+          >
+            {{ tag.name }} ({{ tag.popularity }})
+          </v-chip>
+        </v-chip-group>
+
+        <v-btn
+          v-if="selectedTags.length > 0"
+          @click="clearTagFilters"
+          color="error"
+          variant="tonal"
+          size="small"
+          class="mt-3"
+          prepend-icon="mdi-filter-remove"
         >
-          {{ tag.name }} ({{ tag.popularity }})
-        </div>
+          Clear filters
+        </v-btn>
       </div>
-      <button v-if="selectedTags.length > 0" @click="clearTagFilters" class="clear-filters">
-        Clear filters
-      </button>
-    </div>
+    </v-sheet>
 
-    <div v-if="photoStore.isLoading" class="loading">Loading photos...</div>
+    <v-progress-circular
+      v-if="photoStore.isLoading"
+      indeterminate
+      color="primary"
+      class="mx-auto d-block my-8"
+    ></v-progress-circular>
 
-    <div v-else-if="!photoStore.getPhotos.length" class="no-photos">
-      No photos available. <router-link to="/upload">Upload some!</router-link>
-    </div>
+    <v-sheet
+      v-else-if="!photoStore.getPhotos.length"
+      class="pa-8 rounded text-center"
+      color="grey-lighten-4"
+    >
+      <v-icon icon="mdi-image-off" size="large" color="grey" class="mb-4"></v-icon>
+      <p class="text-body-1 mb-4">No photos available.</p>
+      <v-btn to="/upload" color="primary" prepend-icon="mdi-upload"> Upload Some Photos </v-btn>
+    </v-sheet>
 
-    <div v-else-if="filteredPhotos.length === 0 && selectedTags.length > 0" class="no-photos">
-      No photos match the selected tags.
-    </div>
+    <v-sheet
+      v-else-if="filteredPhotos.length === 0 && selectedTags.length > 0"
+      class="pa-8 rounded text-center"
+      color="grey-lighten-4"
+    >
+      <v-icon icon="mdi-tag-off" size="large" color="grey" class="mb-4"></v-icon>
+      <p class="text-body-1 mb-4">No photos match the selected tags.</p>
+      <v-btn @click="clearTagFilters" color="primary" variant="tonal"> Clear Tag Filters </v-btn>
+    </v-sheet>
 
-    <div v-else class="photo-grid">
-      <div v-for="photo in filteredPhotos" :key="photo.id" class="photo-card">
-        <img :src="getPhotoUrl(photo)" :alt="photo.originalName" />
+    <v-row v-else>
+      <v-col v-for="photo in filteredPhotos" :key="photo.id" cols="12" sm="6" md="4" lg="3">
+        <v-card class="photo-card" elevation="2">
+          <v-img :src="getPhotoUrl(photo)" :alt="photo.originalName" height="250" cover></v-img>
 
-        <div class="photo-info">
-          <h3>{{ photo.originalName }}</h3>
-          <p>Album: {{ photo.album }}</p>
+          <v-card-title class="text-subtitle-1 text-truncate">
+            {{ photo.originalName }}
+          </v-card-title>
 
-          <div v-if="photo.tags && photo.tags.length" class="tags">
-            <span v-for="tag in photo.tags" :key="tag.id" class="tag">
+          <v-card-subtitle> user: {{ photo.album }} </v-card-subtitle>
+
+          <v-card-text v-if="photo.tags && photo.tags.length">
+            <v-chip
+              v-for="tag in photo.tags"
+              :key="tag.id"
+              size="small"
+              class="ma-1"
+              color="primary-lighten-4"
+              variant="outlined"
+            >
               {{ tag.name }}
-            </span>
-          </div>
+            </v-chip>
+          </v-card-text>
 
-          <!-- <button @click="deletePhoto(photo.id)" class="delete-btn">
-            <template v-if="!deletingPhoto">Delete</template>
-            <template v-else>
-              Deleting...
-              <span class="loader"></span>
-            </template>
-          </button> -->
-        </div>
-      </div>
-    </div>
+          <!-- Uncomment if you want to enable delete functionality
+          <v-card-actions>
+            <v-btn
+              @click="deletePhoto(photo.id)"
+              color="error"
+              variant="tonal"
+              block
+              prepend-icon="mdi-delete"
+              :loading="deletingPhoto"
+            >
+              Delete
+            </v-btn>
+          </v-card-actions>
+          -->
+        </v-card>
+      </v-col>
+    </v-row>
   </div>
 </template>
 
@@ -188,7 +241,7 @@ export default {
       toggleTag,
       selectSingleTag,
       clearTagFilters,
-      getPhotoUrl, // <-- add this
+      getPhotoUrl,
     }
   },
 
@@ -212,150 +265,14 @@ export default {
 .photo-feed {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
-}
-
-.loading,
-.no-photos,
-.loading-tags {
-  text-align: center;
-  padding: 20px;
-  font-size: 1.2em;
-  color: #555;
-}
-
-.loading-tags {
-  padding: 10px;
-  font-size: 1em;
-}
-
-.photo-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
 }
 
 .photo-card {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+  height: 100%;
 }
 
-.photo-card img {
-  width: 100%;
-  height: 250px;
-  object-fit: cover;
-}
-
-.photo-info {
-  padding: 15px;
-}
-
-.photo-info h3 {
-  margin: 0 0 10px;
-  font-size: 1.2em;
-}
-
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin: 10px 0;
-}
-
-.tag {
-  background: #f0f0f0;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 0.9em;
-  cursor: pointer;
-}
-
-.tag:hover {
-  background: #e0e0e0;
-}
-
-.delete-btn {
-  background: #ff3b30;
-  color: white;
-  border: none;
-  padding: 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-top: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.loader {
-  width: 12px;
-  height: 12px;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  border-top-color: transparent;
-  margin-left: 8px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Tag filtering styles */
-.tag-filter {
-  margin-bottom: 25px;
-  padding: 15px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.tag-filter h3 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  color: #262626;
-}
-
-.tags-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.tag-chip {
-  background-color: #f0f0f0;
-  padding: 6px 12px;
-  border-radius: 16px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.9em;
-}
-
-.tag-chip:hover {
-  background-color: #e0e0e0;
-}
-
-.tag-chip.selected {
-  background-color: #0095f6;
-  color: white;
-}
-
-.clear-filters {
-  background-color: #ff3b30;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9em;
-}
-
-.clear-filters:hover {
-  background-color: #e62e29;
+.photo-card:hover {
+  transform: translateY(-5px);
 }
 </style>

@@ -1,84 +1,160 @@
 <template>
   <div class="profile-picture-selector">
-    <div v-if="loading">Loading images...</div>
-    <div v-if="error" class="error">{{ error }}</div>
-    <div class="versions-grid" v-if="images.length">
-      <div
-        v-for="(img, idx) in images"
-        :key="img"
-        class="version-option"
-        :class="{ selected: selectedIdx === idx }"
-        @click="selectedIdx = idx"
-      >
-        <img :src="`http://localhost:3000${img}`" />
-      </div>
-    </div>
-    <button :disabled="selectedIdx === null" @click="setProfilePictureHandler" class="confirm-btn">
-      Set as Profile Picture
-    </button>
+    <v-progress-linear v-if="loading" indeterminate color="primary"></v-progress-linear>
+
+    <v-alert v-if="error" type="error" variant="tonal" class="mb-4">
+      {{ error }}
+    </v-alert>
+
+    <v-row v-if="images.length" class="mt-2">
+      <v-col v-for="(img, idx) in images" :key="idx" cols="6" sm="4" md="3" lg="2">
+        <v-card
+          @click="selectedIdx = idx"
+          :elevation="selectedIdx === idx ? 8 : 2"
+          :class="{ 'border-primary': selectedIdx === idx }"
+          class="image-card"
+        >
+          <v-img
+            :src="getImageUrl(img)"
+            width="100"
+            height="100"
+            cover
+            :alt="`Profile option ${idx + 1}`"
+          ></v-img>
+          <v-card-subtitle class="text-center pa-1" style="font-size: 10px">
+            {{ getImageLabel(img) }}
+          </v-card-subtitle>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <v-alert v-else-if="!loading" type="info" variant="tonal" class="mb-4">
+      No profile pictures available. Please upload one.
+    </v-alert>
+
+    <v-btn
+      :disabled="selectedIdx === null || settingPicture"
+      @click="setProfilePictureHandler"
+      color="primary"
+      class="mt-4"
+      block
+      :loading="settingPicture"
+    >
+      {{ settingPicture ? 'Setting...' : 'Set as Profile Picture' }}
+    </v-btn>
   </div>
 </template>
 
 <script>
 import { getProfileImages, setProfilePicture } from '@/api'
+import useProfileStore from '@/store/profile'
 
 export default {
   name: 'ProfilePictureSelector',
   emits: ['selected'],
+  props: {
+    refreshTrigger: {
+      type: Number,
+      default: 0,
+    },
+    newImages: {
+      type: Array,
+      default: () => [],
+    },
+  },
   data() {
     return {
       images: [],
       selectedIdx: null,
       loading: false,
+      settingPicture: false,
       error: '',
     }
+  },
+  watch: {
+    // Watch for refreshTrigger changes to reload images
+    refreshTrigger() {
+      this.fetchImages()
+    },
+    // Watch for new images passed directly from parent
+    newImages: {
+      handler(newImages) {
+        if (newImages && newImages.length) {
+          console.log('[ProfilePictureSelector] Received new images:', newImages)
+          this.images = [...newImages]
+          this.selectedIdx = null
+        }
+      },
+      deep: true,
+    },
   },
   methods: {
     async fetchImages() {
       this.loading = true
       this.error = ''
       try {
-        const res = await getProfileImages()
-        // Sort images to put most recently added first (assuming file naming convention)
-        const sortedImages = this.sortImagesByRecent(res.images || [])
-        this.images = sortedImages
+        console.log('[ProfilePictureSelector] Fetching profile images...')
 
-        // Select the first image by default (most recent)
-        if (this.images.length > 0) {
-          this.selectedIdx = 0
-        } else {
-          this.selectedIdx = null
-        }
+        // Use the API function instead of direct axios call
+        const response = await getProfileImages()
+        console.log('[ProfilePictureSelector] Images response:', response)
+
+        this.images = response.images || []
+        this.selectedIdx = null // Reset selection when images change
       } catch (err) {
-        this.error = err?.message || 'Failed to load images'
         console.error('[ProfilePictureSelector] Error fetching images:', err)
+        this.error = err.message || 'Failed to load images'
       } finally {
         this.loading = false
       }
     },
 
-    // Helper method to sort images by recency
-    sortImagesByRecent(images) {
-      // This is a simple heuristic that assumes the most recently processed images
-      // have the word "profile" without other descriptive terms
-      return [...images].sort((a, b) => {
-        // Put profile.png first (assuming it's the most recent)
-        if (a.includes('profile.png')) return -1
-        if (b.includes('profile.png')) return 1
-        return 0
-      })
-    },
-
     async setProfilePictureHandler() {
       if (this.selectedIdx === null) return
-      const selectedUrl = this.images[this.selectedIdx]
+
+      const selectedImage = this.images[this.selectedIdx]
+      this.settingPicture = true
+      this.error = ''
+
       try {
-        await setProfilePicture({ profilePicture: selectedUrl })
-        this.$emit('selected', selectedUrl)
+        console.log('[ProfilePictureSelector] Setting profile picture:', selectedImage)
+
+        // Use the API function instead of direct axios call
+        await setProfilePicture({ profilePicture: selectedImage })
+        console.log('[ProfilePictureSelector] Profile picture set successfully')
+
+        // Emit the selected image URL to parent
+        this.$emit('selected', selectedImage)
       } catch (err) {
-        this.error = err?.message || 'Failed to set profile picture'
         console.error('[ProfilePictureSelector] Error setting picture:', err)
+        this.error = err.message || 'Failed to set profile picture'
+      } finally {
+        this.settingPicture = false
       }
+    },
+
+    getImageUrl(imagePath) {
+      // Handle both full URLs and relative paths
+      if (imagePath.startsWith('http')) {
+        return imagePath
+      }
+      // Construct the full URL based on your API structure
+      return `http://localhost:3000${imagePath}`
+    },
+
+    getImageLabel(imagePath) {
+      // Extract a user-friendly label from the image path
+      const filename = imagePath.split('/').pop() || imagePath
+
+      if (filename.includes('square-with-gradient')) return 'Gradient'
+      if (filename.includes('square-with-letters')) return 'Letters'
+      if (filename.includes('square-with-pattern')) return 'Pattern'
+      if (filename.includes('with-border')) return 'Border'
+      if (filename.includes('rounded')) return 'Rounded'
+      if (filename.includes('square')) return 'Square'
+      if (filename.includes('profile')) return 'Original'
+
+      return 'Style'
     },
   },
   mounted() {
@@ -88,56 +164,18 @@ export default {
 </script>
 
 <style scoped>
-.profile-picture-selector {
-  margin-bottom: 20px;
+.border-primary {
+  border: 2px solid rgb(var(--v-theme-primary));
 }
 
-.versions-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 20px 0;
-}
-
-.version-option {
-  border: 2px solid transparent;
-  border-radius: 8px;
+.image-card {
   cursor: pointer;
+  transition: all 0.2s;
   overflow: hidden;
-  transition: transform 0.2s;
+  border-radius: 8px;
 }
 
-.version-option:hover {
+.image-card:hover {
   transform: scale(1.05);
-}
-
-.version-option.selected {
-  border-color: #0095f6;
-}
-
-.version-option img {
-  width: 100px;
-  height: 100px;
-  object-fit: cover;
-}
-
-.confirm-btn {
-  margin-top: 10px;
-  padding: 8px 16px;
-  background-color: #0095f6;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.confirm-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.error {
-  color: red;
-  margin: 10px 0;
 }
 </style>

@@ -1,31 +1,38 @@
 <!-- frontend/src/components/LoginForm.vue -->
 <template>
-  <div class="login-form">
-    <h2>Login to InstaApp</h2>
-    <form @submit.prevent="handleLogin">
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input type="email" id="email" v-model="email" required />
-      </div>
+  <v-card class="login-form mx-auto" max-width="500" elevation="4">
+    <v-card-title class="text-center text-h5 py-4"> Login to InstaApp </v-card-title>
 
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" id="password" v-model="password" required />
-      </div>
+    <v-card-text>
+      <v-form @submit.prevent="handleLogin">
+        <v-text-field
+          v-model="email"
+          label="Email"
+          type="email"
+          prepend-inner-icon="mdi-email"
+          variant="outlined"
+          required
+        ></v-text-field>
 
-      <div v-if="authStore.getError" class="error-message">
-        {{ authStore.getError }}
-      </div>
+        <v-text-field
+          v-model="password"
+          label="Password"
+          type="password"
+          prepend-inner-icon="mdi-lock"
+          variant="outlined"
+          required
+        ></v-text-field>
 
-      <button type="submit">
-        <template v-if="!authStore.isLoading">Login</template>
-        <template v-if="authStore.isLoading">
-          Logging in...
-          <span class="loader"></span>
-        </template>
-      </button>
-    </form>
-  </div>
+        <v-alert v-if="authStore.getError" type="error" variant="tonal" class="mb-4">
+          {{ authStore.getError }}
+        </v-alert>
+
+        <v-btn type="submit" color="primary" block :loading="authStore.isLoading" class="mt-2">
+          {{ authStore.isLoading ? 'Logging in...' : 'Login' }}
+        </v-btn>
+      </v-form>
+    </v-card-text>
+  </v-card>
 </template>
 
 <script>
@@ -65,58 +72,7 @@ export default {
 
 <style scoped>
 .login-form {
-  max-width: 400px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.form-group {
-  margin-bottom: 15px;
-}
-
-label {
-  display: block;
-  margin-bottom: 5px;
-}
-
-input {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-button {
-  background: #0095f6;
-  color: white;
-  border: none;
-  padding: 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.error-message {
-  color: red;
-  margin: 10px 0;
-}
-
-.loader {
-  width: 15px;
-  height: 15px;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  border-top-color: transparent;
-  margin-left: 10px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  margin-top: 2rem;
+  padding: 1rem;
 }
 </style>

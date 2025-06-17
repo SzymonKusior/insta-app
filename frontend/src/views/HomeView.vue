@@ -1,8 +1,12 @@
 <template>
-  <div class="home-view">
-    <h1>Photo Feed</h1>
-    <PhotoFeed />
-  </div>
+  <v-container class="home-view">
+    <v-row justify="center">
+      <v-col cols="12">
+        <h1 class="text-h4 text-center font-weight-bold mb-6">Photo Feed</h1>
+        <PhotoFeed />
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <script>
@@ -17,9 +21,5 @@ export default {
 </script>
 
 <style scoped>
-.home-view h1 {
-  text-align: center;
-  margin-bottom: 30px;
-  color: #262626;
-}
+/* All styling now handled by Vuetify */
 </style>

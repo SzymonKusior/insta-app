@@ -1,29 +1,34 @@
 <template>
-  <div class="app-container">
-    <header class="app-header">
-      <div class="logo">
-        <router-link to="/">InstaAp</router-link>
+  <v-app>
+    <v-app-bar elevation="1">
+      <v-app-bar-title class="text-h5 font-weight-bold">
+        <router-link to="/" class="text-decoration-none text-black">InstaAp</router-link>
+      </v-app-bar-title>
+
+      <v-spacer></v-spacer>
+
+      <div v-if="authStore.isAuthenticated">
+        <v-btn to="/" variant="text" class="mx-1">Home</v-btn>
+        <v-btn to="/upload" variant="text" class="mx-1">Upload</v-btn>
+        <v-btn to="/profile" variant="text" class="mx-1">Profile</v-btn>
+        <v-btn @click="handleLogout" variant="text" class="mx-1">Logout</v-btn>
       </div>
-      <nav v-if="authStore.isAuthenticated">
-        <router-link to="/">Home</router-link>
-        <router-link to="/upload">Upload</router-link>
-        <router-link to="/profile">Profile</router-link>
-        <a href="#" @click.prevent="handleLogout">Logout</a>
-      </nav>
-      <nav v-else>
-        <router-link to="/login">Login</router-link>
-        <router-link to="/register">Register</router-link>
-      </nav>
-    </header>
+      <div v-else>
+        <v-btn to="/login" variant="text" class="mx-1">Login</v-btn>
+        <v-btn to="/register" variant="text" class="mx-1">Register</v-btn>
+      </div>
+    </v-app-bar>
 
-    <main class="app-content">
-      <router-view />
-    </main>
+    <v-main>
+      <v-container class="py-8 px-6" fluid>
+        <router-view />
+      </v-container>
+    </v-main>
 
-    <footer class="app-footer">
-      <p>&copy; 2025 InstaAp</p>
-    </footer>
-  </div>
+    <v-footer class="d-flex justify-center pa-4 text-caption text-grey">
+      &copy; {{ new Date().getFullYear() }} InstaAp
+    </v-footer>
+  </v-app>
 </template>
 
 <script>
@@ -37,8 +42,7 @@ export default {
     onMounted(async () => {
       try {
         // Call the checkAuthStatus function when the app mounts
-        console.log('cheking auth')
-
+        console.log('checking auth')
         await authStore.checkAuthStatus()
       } catch (error) {
         console.error('Error checking authentication status:', error)
@@ -57,71 +61,12 @@ export default {
     },
   },
 }
+import '@mdi/font/css/materialdesignicons.css'
 </script>
+
 <style>
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: 'Arial', sans-serif;
-  background-color: #fafafa;
-  color: #262626;
-}
-
-.app-container {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.app-header {
-  background-color: white;
-  padding: 15px 20px;
-  border-bottom: 1px solid #dbdbdb;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo a {
-  font-size: 24px;
-  font-weight: bold;
-  text-decoration: none;
-  color: #262626;
-}
-
-nav {
-  display: flex;
-  gap: 20px;
-}
-
-nav a {
-  text-decoration: none;
-  color: #262626;
-  font-weight: 500;
-}
-
-nav a.router-link-active {
-  color: #0095f6;
-}
-
-.app-content {
-  flex: 1;
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-.app-footer {
-  padding: 15px;
-  background-color: white;
-  border-top: 1px solid #dbdbdb;
-  text-align: center;
-  font-size: 14px;
-  color: #8e8e8e;
-}
+/*
+  Base styles are now handled by Vuetify.
+  The v-app component establishes proper CSS resets and foundational styles.
+*/
 </style>
